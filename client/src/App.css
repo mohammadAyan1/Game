@@ -1,0 +1,27 @@
+body {
+  background: #0f172a;
+  color: white;
+  font-family: sans-serif;
+}
+
+.game {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.planeArea {
+  height: 300px;
+  position: relative;
+  border-bottom: 2px solid white;
+  overflow: hidden;
+}
+
+.plane {
+  position: absolute;
+  font-size: 40px;
+  transition: transform 0.1s linear;
+}
+
+.crash {
+  color: red;
+}

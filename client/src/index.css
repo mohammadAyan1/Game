@@ -1,0 +1,287 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+@import "tailwindcss";
+
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+
+:root {
+  --gold: #d4a847;
+  --gold-bright: #f0c96a;
+  --gold-dim: #8b6914;
+  --gold-glow: #d4a84760;
+  --black-deep: #070604;
+  --black-card: #0e0b08;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+  background: var(--black-deep);
+  color: var(--gold);
+  font-family: "Space Mono", monospace;
+}
+
+/* Remove number input arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0e0b08;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4a84730;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4a84755;
+}
+
+/* ── Keyframes ── */
+
+@keyframes shimmer {
+  0% {
+    background-position: -400% center;
+  }
+  100% {
+    background-position: 400% center;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGold {
+  0%,
+  100% {
+    box-shadow: 0 0 20px #d4a84728;
+  }
+  50% {
+    box-shadow: 0 0 40px #d4a84755;
+  }
+}
+
+@keyframes rotateDiamond {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cardHover {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes borderFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ── Utilities ── */
+.font-cinzel {
+  font-family: "Cinzel", serif;
+}
+.font-mono {
+  font-family: "Space Mono", monospace;
+}
+
+.text-gold {
+  color: var(--gold);
+}
+.text-gold-bright {
+  color: var(--gold-bright);
+}
+.text-gold-dim {
+  color: var(--gold-dim);
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--gold-dim) 0%,
+    var(--gold-bright) 30%,
+    #fff8e1 50%,
+    var(--gold-bright) 70%,
+    var(--gold-dim) 100%
+  );
+  background-size: 400% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+.float-up {
+  animation: floatUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.float-up-1 {
+  animation-delay: 0.05s;
+}
+.float-up-2 {
+  animation-delay: 0.12s;
+}
+.float-up-3 {
+  animation-delay: 0.2s;
+}
+.float-up-4 {
+  animation-delay: 0.28s;
+}
+.float-up-5 {
+  animation-delay: 0.36s;
+}
+
+.gold-input {
+  width: 100%;
+  background: #d4a84708;
+  border: 1px solid #d4a84728;
+  border-radius: 10px;
+  padding: 13px 16px;
+  color: var(--gold);
+  font-size: 14px;
+  font-family: "Space Mono", monospace;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.gold-input::placeholder {
+  color: #d4a84745;
+}
+
+.gold-input:focus {
+  border-color: #d4a84755;
+  box-shadow:
+    0 0 0 3px #d4a84710,
+    0 0 20px #d4a84715;
+}
+
+.gold-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #f0c96a44;
+  background: linear-gradient(
+    135deg,
+    #b8860b 0%,
+    #d4a847 35%,
+    #f0c96a 55%,
+    #d4a847 75%,
+    #b8860b 100%
+  );
+  background-size: 200% 100%;
+  color: #150f00;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "Space Mono", monospace;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow:
+    0 0 30px #d4a84738,
+    0 4px 20px #00000060;
+}
+
+.gold-btn:hover {
+  box-shadow:
+    0 0 50px #d4a84758,
+    0 6px 28px #00000080;
+  transform: translateY(-2px);
+}
+
+.gold-btn:active {
+  transform: translateY(0);
+}
+
+.game-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid #d4a84722;
+  background: linear-gradient(160deg, #0e0b08 0%, #090705 100%);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, #d4a84730, transparent 50%, #d4a84715);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.game-card:hover {
+  transform: translateY(-6px);
+  border-color: #d4a84740;
+  box-shadow:
+    0 20px 60px #00000080,
+    0 0 40px #d4a84720;
+}
+
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    #8b691440 30%,
+    #d4a84730 50%,
+    #8b691440 70%,
+    transparent 95%
+  );
+}
