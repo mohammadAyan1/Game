@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react"
 import { io } from "socket.io-client"
-
-const socket = io("http://localhost:5000")
+// "http://localhost:5000"
+// const socket = io( "https://lkrnhdhz-5000.inc1.devtunnels.ms")
+const socket = io(import.meta.env.VITE_BACKEND_MAIN_URL)
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const W = 700, H = 340

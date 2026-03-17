@@ -727,7 +727,7 @@ import { QRCode } from 'react-qr-code'
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const API = 'http://localhost:3001'
+const API = import.meta.env.VITE_BACKEND_PAYMENT_URL //'http://localhost:3001'
 const POLL_INTERVAL = 4000   // normal poll every 4s
 const FOCUS_DELAY = 1200   // jab user wapas aaye to 1.2s baad check (UPI app close hone ka time)
 
@@ -837,7 +837,7 @@ export default function PayPage({ txnId }) {
                 if (data.status === 'success') {
                     // 2 second success screen, phir redirect
                     setTimeout(() => {
-                        const ret = txn?.return_url || 'http://localhost:5173'
+                        const ret = txn?.return_url || import.meta.env.VITE_FRONTEND_MAIN_URL //'http://localhost:5173'
                         window.location.href = `${ret}/deposit/success?txnId=${txnId}&coins=${data.coins}&status=success`
                     }, 2200)
                 }
@@ -916,7 +916,7 @@ export default function PayPage({ txnId }) {
             if (data.success && data.status === 'success') {
                 setStatus('success')
                 setTimeout(() => {
-                    const ret = txn?.return_url || 'http://localhost:5173'
+                    const ret = txn?.return_url || import.meta.env.VITE_FRONTEND_MAIN_URL //|| 'http://localhost:5173'
                     window.location.href = `${ret}/deposit/success?txnId=${txnId}&coins=${txn.coins}&status=success`
                 }, 2200)
             } else {
@@ -1011,7 +1011,8 @@ export default function PayPage({ txnId }) {
                 </svg>
                 <h2 style={{ fontSize: '18px', color: '#f97316', letterSpacing: '2px' }}>SESSION EXPIRED</h2>
                 <p style={S.muted}>This payment window has expired. Please create a new deposit.</p>
-                <button onClick={() => window.location.href = 'http://localhost:5173/deposit'}
+                <button onClick={() => window.location.href = `${import.meta.env.VITE_FRONTEND_MAIN_URL}/deposit`}
+                    // http://localhost:5173/deposit
                     style={S.goldBtn}>
                     CREATE NEW DEPOSIT
                 </button>

@@ -704,8 +704,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Zap, Shield, Clock, CheckCircle2 } from 'lucide-react'
 
-const PAYMENT_API = 'http://localhost:3001'   // payment-server
-const PAY_GATEWAY = 'http://localhost:5174'   // payment-gateway website
+const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL  //|| 'http://localhost:3001'   // payment-server
+const PAY_GATEWAY = import.meta.env.VITE_FRONTEND_PAYMENT_URL //'http://localhost:5174'   // payment-gateway website
 
 const G = { gold: '#D4A847', bright: '#F0C96A', bg: '#070604', border: '#D4A84728' }
 

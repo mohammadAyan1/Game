@@ -4,7 +4,16 @@ import { Server } from "socket.io"
 import cors from "cors"
 
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: [
+        process.env.FRONTEND_URL_PAYMENT,
+        process.env.FRONTEND_URL_MAIN,
+        process.env.BACKEND_URL_PAYMENT,
+    ],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+}))
+app.use(express.json())
+
 
 const server = http.createServer(app)
 

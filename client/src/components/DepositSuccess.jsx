@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
-const PAYMENT_API = 'http://localhost:3001'
+const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL //'http://localhost:3001'
 const fmt = (n) => Number(n).toLocaleString('en-IN')
 
 export default function DepositSuccess() {

@@ -9,15 +9,19 @@ const cors = require('cors')
 const Database = require('better-sqlite3')
 const { v4: uuidv4 } = require('uuid')
 const path = require('path')
+const dotenv = require("dotenv")
+
+dotenv.config()
+
 
 const app = express()
 
 // ── CORS — dono websites ko allow karo ──────────────────────────────────────
 app.use(cors({
     origin: [
-        'http://localhost:5173',   // Main gaming app
-        'http://localhost:5174',   // Payment gateway
-        'http://localhost:3000',   // Backup
+        process.env.FRONTEND_URL_PAYMENT,
+        process.env.FRONTEND_URL_MAIN,
+        process.env.BACKEND_URL_PAYMENT,
     ],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
 }))
