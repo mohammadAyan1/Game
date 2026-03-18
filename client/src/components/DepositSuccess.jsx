@@ -5,7 +5,8 @@
 // URL: /deposit/success?txnId=xxx&coins=xxx&status=success
 
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { data, useNavigate, useSearchParams } from 'react-router-dom'
+import api from '../utils/api'
 
 const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL //'http://localhost:3001'
 const fmt = (n) => Number(n).toLocaleString('en-IN')
@@ -20,28 +21,84 @@ export default function DepositSuccess() {
     const [txn, setTxn] = useState(null)
     const [verified, setVerified] = useState(false)
     const [checking, setChecking] = useState(true)
+    const [userId, setUserId] = useState(null)
+
+
+    // useEffect(() => {
+    //     if (!txnId) { setChecking(false); return }
+
+    //     const fetchUserId = async () => {
+    //         const res = await api.get("/checkuser")
+
+    //         setUserId(res?.data?.id)
+    //         return res.data   // 🔥 IMPORTANT
+    //     }
+
+    //     fetchUserId()
+
+
+
+
+    //     console.log(userId);
+
+
+    //     // Final verification — backend se confirm karo
+    //     fetch(`${PAYMENT_API}/api/txn/status/${txnId}?userId=${userId}`)
+    //         .then(r => r.json())
+    //         .then(data => {
+    //             setVerified(data.status === 'success')
+    //             setChecking(false)
+    //         })
+    //         .catch(() => {
+    //             // URL pe status=success aaya hai to trust karo
+    //             setVerified(statusFromUrl === 'success')
+    //             setChecking(false)
+    //         })
+
+    //     // Full txn details bhi fetch karo
+    //     fetch(`${PAYMENT_API}/api/txn/${txnId}`)
+    //         .then(r => r.json())
+    //         .then(data => { if (!data.error) setTxn(data) })
+    //         .catch(() => { })
+    // }, [txnId, statusFromUrl])
+
+
 
     useEffect(() => {
         if (!txnId) { setChecking(false); return }
 
-        // Final verification — backend se confirm karo
-        fetch(`${PAYMENT_API}/api/txn/status/${txnId}`)
-            .then(r => r.json())
-            .then(data => {
+        const init = async () => {
+            try {
+                // 🔥 pehle user lo
+                const res = await api.get("/checkuser")
+                const id = res?.data?.id
+
+                console.log("UserId:", id)
+
+                // 🔥 yahi use karo (state nahi)
+                const statusRes = await fetch(
+                    `${PAYMENT_API}/api/txn/status/${txnId}?userId=${id}`
+                )
+
+                const data = await statusRes.json()
+
                 setVerified(data.status === 'success')
                 setChecking(false)
-            })
-            .catch(() => {
-                // URL pe status=success aaya hai to trust karo
+
+                // 🔥 txn details
+                const txnRes = await fetch(`${PAYMENT_API}/api/txn/${txnId}`)
+                const txnData = await txnRes.json()
+
+                if (!txnData.error) setTxn(txnData)
+
+            } catch (err) {
                 setVerified(statusFromUrl === 'success')
                 setChecking(false)
-            })
+            }
+        }
 
-        // Full txn details bhi fetch karo
-        fetch(`${PAYMENT_API}/api/txn/${txnId}`)
-            .then(r => r.json())
-            .then(data => { if (!data.error) setTxn(data) })
-            .catch(() => { })
+        init()
+
     }, [txnId, statusFromUrl])
 
     const coins = Number(coinsFromUrl) || txn?.coins || 0

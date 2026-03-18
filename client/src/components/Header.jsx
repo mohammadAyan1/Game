@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Menu, X, Wallet, User, ChevronDown, Zap } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, } from 'react-router-dom'
+
+
+import { useApp } from '../context/AppContext'
 const NAV = [
     { label: 'Aviator', id: 'aviator' },
     { label: 'Coin Toss', id: 'coin-toss' },
@@ -14,11 +17,15 @@ export default function Header() {
     const [scrolled, setScrolled] = useState(false)
     const [active, setActive] = useState('aviator')
 
+    const { coin } = useApp();
+
+
     useEffect(() => {
         const fn = () => setScrolled(window.scrollY > 12)
         window.addEventListener('scroll', fn)
         return () => window.removeEventListener('scroll', fn)
     }, [])
+
 
     return (
         <>
@@ -106,7 +113,7 @@ export default function Header() {
                                 style={{ background: '#D4A84710', border: '1px solid #D4A84728' }}>
                                 <Wallet size={14} color="#D4A847" />
                                 <span style={{ color: '#D4A847', fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px' }}>
-                                    ₹1,200
+                                    {coin}
                                 </span>
                             </div>
 

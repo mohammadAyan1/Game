@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import api from '../utils/api'
 
 // ── Decorative elements ───────────────────────────────────────────────────────
 function OrnamentalLine() {
@@ -87,10 +88,15 @@ export default function Login() {
         return e
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         const errs = validate()
         if (Object.keys(errs).length) { setErrors(errs); return }
+
+        const res = await api.post("/user", form)
+
+        if (!res.data.success) return
+
         setErrors({})
         setLoading(true)
         setTimeout(() => {

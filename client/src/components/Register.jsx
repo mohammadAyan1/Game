@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
 
 import { useNavigate } from 'react-router-dom'
+import api from '../utils/api.js'
 
 function InputField({ label, type = 'text', placeholder, icon: Icon, value, onChange, error, children }) {
     const [show, setShow] = useState(false)
@@ -122,10 +123,23 @@ export default function Register() {
         return e
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         const errs = validate()
         if (Object.keys(errs).length) { setErrors(errs); return }
+
+        console.log('====================================');
+        console.log(form);
+        console.log('====================================');
+
+
+        const res = await api.post("/user/register", form)
+
+        if (!res?.success) return
+        console.log('====================================');
+        console.log(res);
+        console.log('====================================');
+
         setErrors({})
         setLoading(true)
         setTimeout(() => { setLoading(false); setSubmitted(true) }, 1800)

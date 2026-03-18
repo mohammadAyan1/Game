@@ -16,6 +16,7 @@ const GAMES = [
         multiplier: '12.8×',
         color: '#D4A847',
         hot: true,
+        url: "/aviator"
     },
     {
         id: 'coin-toss',
@@ -29,6 +30,7 @@ const GAMES = [
         multiplier: '2×',
         color: '#F0C96A',
         hot: false,
+        url: "/"
     },
     {
         id: 'color-game',
@@ -42,6 +44,7 @@ const GAMES = [
         multiplier: '5×',
         color: '#C084FC',
         hot: true,
+        url: "/"
     },
     {
         id: 'dice',
@@ -55,6 +58,7 @@ const GAMES = [
         multiplier: '30×',
         color: '#60a5fa',
         hot: false,
+        url: "/"
     },
     {
         id: 'roulette',
@@ -68,6 +72,8 @@ const GAMES = [
         multiplier: '36×',
         color: '#a855f7',
         hot: false,
+        url: "/"
+
     },
     {
         id: 'mines',
@@ -81,6 +87,8 @@ const GAMES = [
         multiplier: '100×',
         color: '#f97316',
         hot: false,
+        url: "/"
+
     },
 ]
 
@@ -104,7 +112,7 @@ function Diamond({ size = 20, opacity = 0.4 }) {
 }
 
 // ── Game Card ─────────────────────────────────────────────────────────────────
-function GameCard({ game, idx }) {
+function GameCard({ game, idx, navigate }) {
     const [hovered, setHovered] = useState(false)
 
     return (
@@ -118,6 +126,7 @@ function GameCard({ game, idx }) {
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
+            onClick={() => navigate(game?.url)}
         >
             {/* Top row */}
             <div className="flex items-start justify-between">
