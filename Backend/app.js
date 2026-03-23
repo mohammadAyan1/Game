@@ -17,6 +17,8 @@ console.log('====================================');
 console.log(process.env.FRONTEND_URL_MAIN);
 console.log('====================================');
 
+app.set("trust proxy", 1);
+
 // ✅ CORS setup
 app.use(cors({
   origin: [
