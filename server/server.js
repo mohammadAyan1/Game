@@ -40,8 +40,8 @@ function generateCrash() {
 
     let crash = Math.floor((1 / (1 - r)) * 100) / 100
 
-    if (crash > 10) {
-        crash = 10
+    if (crash > 5) {
+        crash = 5
     }
 
     return crash
@@ -121,11 +121,13 @@ app.get("/api/checkuser", async (req, res) => {
 
 
         return res.status(200).json({
+            success: true,
             id: users[0].id,
             username: users[0].Username,
             email: users[0].Email,
             phone: users[0].Phone,
             role: users[0].Role
+
         });
 
     } catch (error) {

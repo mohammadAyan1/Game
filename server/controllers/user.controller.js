@@ -104,13 +104,25 @@ export const userController = {
                 { expiresIn: "1d" }
             );
 
-            // ✅ COOKIE SET
+            console.log(token, "FGHJK");
+
+
+            // ✅ COOKIE SET Localhost
+            // res.cookie("token", token, {
+            //     httpOnly: true,
+            //     secure: false,
+            //     sameSite: "lax",   // 🔥 change here
+            //     maxAge: 24 * 60 * 60 * 1000
+            // });
+
+            // ✅ COOKIE SET Live
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: false,
+                secure: true,       // 🔥 required
                 sameSite: "none",
                 maxAge: 24 * 60 * 60 * 1000
             });
+
 
             return res.status(200).json({
                 message: "Login successful",

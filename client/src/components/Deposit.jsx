@@ -9,12 +9,12 @@ const PAY_GATEWAY = import.meta.env.VITE_FRONTEND_PAYMENT_URL //'http://localhos
 const G = { gold: '#D4A847', bright: '#F0C96A', bg: '#070604', border: '#D4A84728' }
 
 const PACKAGES = [
-    { id: 1, rupees: 100, coins: 130, bonus: 30, pct: '30%', label: 'STARTER', tag: null, popular: false },
-    { id: 2, rupees: 250, coins: 350, bonus: 100, pct: '40%', label: 'CLASSIC', tag: 'POPULAR', popular: true },
-    { id: 3, rupees: 500, coins: 750, bonus: 250, pct: '50%', label: 'ELITE', tag: 'BEST VALUE', popular: false },
-    { id: 4, rupees: 1000, coins: 1600, bonus: 600, pct: '60%', label: 'ROYAL', tag: null, popular: false },
-    { id: 5, rupees: 2500, coins: 4250, bonus: 1750, pct: '70%', label: 'PLATINUM', tag: '🔥 HOT', popular: false },
-    { id: 6, rupees: 5000, coins: 9000, bonus: 4000, pct: '80%', label: 'DIAMOND', tag: 'MAX BONUS', popular: false },
+    { id: 1, rupees: 1, coins: 130, bonus: 30, pct: '30%', label: 'STARTER', tag: null, popular: false },
+    { id: 2, rupees: 2, coins: 350, bonus: 100, pct: '40%', label: 'CLASSIC', tag: 'POPULAR', popular: true },
+    { id: 3, rupees: 5, coins: 750, bonus: 250, pct: '50%', label: 'ELITE', tag: 'BEST VALUE', popular: false },
+    { id: 4, rupees: 10, coins: 1600, bonus: 600, pct: '60%', label: 'ROYAL', tag: null, popular: false },
+    { id: 5, rupees: 25, coins: 4250, bonus: 1750, pct: '70%', label: 'PLATINUM', tag: '🔥 HOT', popular: false },
+    { id: 6, rupees: 50, coins: 9000, bonus: 4000, pct: '80%', label: 'DIAMOND', tag: 'MAX BONUS', popular: false },
 ]
 
 const fmt = (n) => Number(n).toLocaleString('en-IN')
@@ -50,7 +50,7 @@ export default function Deposit() {
     const bonus = coins - amt
 
     const handleContinue = async () => {
-        if (amt < 10) return
+        if (amt < 1) return
         setLoading(true); setError('')
         try {
             // returnUrl = ye main app ka URL hai, jahan payment ke baad wapas aana hai
@@ -245,8 +245,8 @@ export default function Deposit() {
 
                 {/* CTA */}
                 <button className="gold-btn" onClick={handleContinue}
-                    disabled={amt < 10 || loading}
-                    style={{ opacity: amt < 10 ? 0.4 : 1, fontSize: '12px', letterSpacing: '3px' }}>
+                    disabled={amt < 1 || loading}
+                    style={{ opacity: amt < 1 ? 0.4 : 1, fontSize: '12px', letterSpacing: '3px' }}>
                     {loading ? 'CREATING PAYMENT...' : 'CONTINUE TO PAYMENT →'}
                 </button>
 

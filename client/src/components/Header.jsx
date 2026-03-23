@@ -2,29 +2,58 @@ import { useState, useEffect } from 'react'
 import { Menu, X, Wallet, User, ChevronDown, Zap } from 'lucide-react'
 import { useNavigate, } from 'react-router-dom'
 
+import { useLocation } from 'react-router-dom';
+
+import { useRef } from "react";
+
+
 
 import { useApp } from '../context/AppContext'
 const NAV = [
-    { label: 'Aviator', id: 'aviator' },
-    { label: 'Coin Toss', id: 'coin-toss' },
-    { label: 'Color Game', id: 'color-game' },
-    { label: 'Leaderboard', id: 'leaderboard' },
+    { label: 'Aviator', id: 'aviator', url: "/aviator" },
+    { label: 'Coin Toss', id: 'coin-toss', url: "/cointoss" },
+    { label: 'Color Game', id: 'color-game', url: "/colorgame" },
+    { label: 'Leaderboard', id: 'leaderboard', url: "/leaderboard" },
 ]
 
 export default function Header() {
+
+    const locationPath = useLocation()
+
     const navigate = useNavigate()
     const [open, setOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
-    const [active, setActive] = useState('aviator')
+    const [openUser, setOpenUser] = useState(false)
 
-    const { coin } = useApp();
+    const [active, setActive] = useState('')
 
+    const { coin, user } = useApp();
+
+    const timeoutRef = useRef(null);
+
+
+    useEffect(() => {
+        console.log(user, "FGHJ");
+    }, [user])
+
+
+    const activePath = ["/aviator", "/cointoss", "/colorgame", "/leaderboard"]
+
+    useEffect(() => {
+        console.log(locationPath?.pathname);
+
+        if (!activePath.includes(locationPath?.pathname)) {
+            setActive("")
+        }
+
+    }, [locationPath?.pathname])
 
     useEffect(() => {
         const fn = () => setScrolled(window.scrollY > 12)
         window.addEventListener('scroll', fn)
         return () => window.removeEventListener('scroll', fn)
     }, [])
+
 
 
     return (
@@ -85,7 +114,7 @@ export default function Header() {
                             {NAV.map(item => (
                                 <button
                                     key={item.id}
-                                    onClick={() => setActive(item.id)}
+                                    onClick={() => { setActive(item.id), navigate(item?.url) }}
                                     className="relative px-4 py-2 bg-transparent border-none cursor-pointer transition-all duration-200"
                                     style={{
                                         color: active === item.id ? '#D4A847' : '#D4A84755',
@@ -123,32 +152,72 @@ export default function Header() {
                             </button>
 
                             {/* Login */}
-                            <button
-                                onClick={() => navigate('/login')}
-                                className="px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer"
-                                style={{
-                                    background: 'transparent',
-                                    border: '1px solid #D4A84730',
-                                    color: '#D4A84790',
-                                    fontSize: '10px',
-                                    letterSpacing: '2px',
-                                    fontFamily: "'Space Mono',monospace",
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A84755'; e.currentTarget.style.color = '#D4A847' }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#D4A84730'; e.currentTarget.style.color = '#D4A84790' }}
-                            >
-                                LOGIN
-                            </button>
 
+                            {!user?.success && (
+                                <button
+                                    onClick={() => navigate('/login')}
+                                    className="px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer"
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid #D4A84730',
+                                        color: '#D4A84790',
+                                        fontSize: '10px',
+                                        letterSpacing: '2px',
+                                        fontFamily: "'Space Mono',monospace",
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A84755'; e.currentTarget.style.color = '#D4A847' }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#D4A84730'; e.currentTarget.style.color = '#D4A84790' }}
+                                >
+                                    LOGIN
+                                </button>
+                            )}
                             {/* Avatar */}
-                            <button
-                                className="flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
-                                style={{ width: '38px', height: '38px', background: '#D4A84712', border: '1px solid #D4A84730' }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A84755'; e.currentTarget.style.background = '#D4A84720' }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#D4A84730'; e.currentTarget.style.background = '#D4A84712' }}
+
+                            <div
+                                className="relative flex items-center"
+                                onMouseEnter={() => {
+                                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                                    setOpenUser(true);
+                                }}
+                                onMouseLeave={() => {
+                                    timeoutRef.current = setTimeout(() => {
+                                        setOpenUser(false);
+                                    }, 200);
+                                }}
                             >
-                                <User size={15} color="#D4A847" />
-                            </button>
+                                {/* Avatar Button */}
+                                <button
+                                    className="flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
+                                    style={{
+                                        width: '38px',
+                                        height: '38px',
+                                        background: '#D4A84712',
+                                        border: '1px solid #D4A84730'
+                                    }}
+                                >
+                                    <User size={15} color="#D4A847" />
+                                </button>
+
+                                {/* Dropdown */}
+                                {openUser && (
+                                    <div
+                                        className="absolute top-12 right-0 w-40 rounded-lg shadow-lg p-3 z-50"
+                                        style={{
+                                            background: '#111',
+                                            border: '1px solid #D4A84730'
+                                        }}
+                                    >
+                                        <div className="flex flex-col gap-2">
+                                            <button className="text-left text-sm hover:text-yellow-400">
+                                                Profile
+                                            </button>
+                                            <button className="text-left text-sm hover:text-red-400">
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Mobile burger */}
@@ -207,7 +276,7 @@ export default function Header() {
                 {/* Bottom accent */}
                 <div className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
                     style={{ background: 'linear-gradient(90deg,transparent 5%,#8B691440 30%,#D4A84725 50%,#8B691440 70%,transparent 95%)' }} />
-            </header>
+            </header >
         </>
     )
 }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
-
+import { useApp } from '../context/AppContext'
 // ── Decorative elements ───────────────────────────────────────────────────────
 function OrnamentalLine() {
     return (
@@ -70,6 +70,8 @@ function InputField({ label, type, placeholder, icon: Icon, value, onChange, err
 // ── Login Component ───────────────────────────────────────────────────────────
 export default function Login() {
 
+    const { fetchCoins, fetchUser } = useApp()
+
     const navigate = useNavigate()
 
     const [form, setForm] = useState({ email: '', password: '' })
@@ -99,6 +101,8 @@ export default function Login() {
 
         setErrors({})
         setLoading(true)
+        fetchCoins()
+        fetchUser()
         setTimeout(() => {
             setLoading(false)
             setSubmitted(true)
