@@ -2,7 +2,7 @@ import axios from "axios";
 
 // ✅ Axios instance create
 const api = axios.create({
-    baseURL: `${import.meta.VITE_BACKEND_MAIN_URL}/api`, // backend URL
+    baseURL: `${import.meta.env.VITE_BACKEND_MAIN_URL}/api`, // backend URL
     withCredentials: true, // 🔥 important (cookies ke liye)
     headers: {
         "Content-Type": "application/json"
