@@ -110,7 +110,7 @@ app.get("/api/checkuser", async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         const [users] = await pool.query(
-            "SELECT id, Username, Email, Phone, Role FROM Users WHERE id = ?",
+            "SELECT id, Username, Email, Phone, Role FROM users WHERE id = ?",
             [decoded.id]
         );
 
