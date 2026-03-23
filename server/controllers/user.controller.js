@@ -26,7 +26,7 @@ export const userController = {
 
             // ✅ check existing user (username OR email)
             const [existingUser] = await pool.query(
-                "SELECT * FROM Users WHERE Username = ? OR Email = ?",
+                "SELECT * FROM users WHERE Username = ? OR Email = ?",
                 [username, email]
             );
 
@@ -42,7 +42,7 @@ export const userController = {
 
             // ✅ insert user
             await pool.query(
-                `INSERT INTO Users (Username, Email, Phone, Password) 
+                `INSERT INTO users (Username, Email, Phone, Password) 
          VALUES (?, ?, ?, ?)`,
                 [username, email, phone, hashedPassword]
             );
@@ -74,7 +74,7 @@ export const userController = {
 
             // ✅ find user
             const [users] = await pool.query(
-                "SELECT * FROM Users WHERE Username = ? OR Email = ?",
+                "SELECT * FROM users WHERE Username = ? OR Email = ?",
                 [username || null, email || null]
             );
 
