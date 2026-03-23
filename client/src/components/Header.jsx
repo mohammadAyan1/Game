@@ -243,7 +243,7 @@ export default function Header() {
                     <div className="px-6 py-4 flex flex-col gap-1">
                         {NAV.map(item => (
                             <button key={item.id}
-                                onClick={() => { setActive(item.id); setOpen(false) }}
+                                onClick={() => { setActive(item.id); setOpen(false); navigate(item?.url) }}
                                 className="text-left py-3 bg-transparent border-none cursor-pointer transition-colors duration-200"
                                 style={{
                                     color: active === item.id ? '#D4A847' : '#D4A84755',
@@ -262,13 +262,16 @@ export default function Header() {
                             <div className="flex items-center gap-2 px-4 py-2 rounded-lg flex-1 justify-center"
                                 style={{ background: '#D4A84710', border: '1px solid #D4A84728' }}>
                                 <Wallet size={14} color="#D4A847" />
-                                <span style={{ color: '#D4A847', fontSize: '12px', fontWeight: 700 }}>₹1,200</span>
+                                <span style={{ color: '#D4A847', fontSize: '12px', fontWeight: 700 }}>{coin}</span>
                             </div>
-                            <button
-                                onClick={() => { navigate('/login'); setOpen(false) }}
-                                className="gold-btn flex-1" style={{ padding: '10px', fontSize: '10px', letterSpacing: '2px' }}>
-                                LOGIN
-                            </button>
+
+                            {!user?.success && (
+                                <button
+                                    onClick={() => { navigate('/login'); setOpen(false) }}
+                                    className="gold-btn flex-1" style={{ padding: '10px', fontSize: '10px', letterSpacing: '2px' }}>
+                                    LOGIN
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -276,7 +279,7 @@ export default function Header() {
                 {/* Bottom accent */}
                 <div className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
                     style={{ background: 'linear-gradient(90deg,transparent 5%,#8B691440 30%,#D4A84725 50%,#8B691440 70%,transparent 95%)' }} />
-            </header >
+            </header>
         </>
     )
 }
