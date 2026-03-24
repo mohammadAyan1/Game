@@ -147,9 +147,14 @@ export default function Header() {
                             </div>
 
                             {/* Deposit */}
-                            <button className="gold-btn" style={{ width: 'auto', padding: '9px 22px', fontSize: '10px', letterSpacing: '2.5px' }} onClick={() => navigate("/deposit")}>
-                                DEPOSIT
-                            </button>
+
+                            {
+                                user?.success && (
+                                    <button className="gold-btn" style={{ width: 'auto', padding: '9px 22px', fontSize: '10px', letterSpacing: '2.5px' }} onClick={() => navigate("/deposit")}>
+                                        DEPOSIT
+                                    </button>
+                                )
+                            }
 
                             {/* Login */}
 
@@ -270,6 +275,13 @@ export default function Header() {
                                     onClick={() => { navigate('/login'); setOpen(false) }}
                                     className="gold-btn flex-1" style={{ padding: '10px', fontSize: '10px', letterSpacing: '2px' }}>
                                     LOGIN
+                                </button>
+                            )}
+                            {user?.success && (
+                                <button
+                                    onClick={() => { navigate('/deposit'); setOpen(false) }}
+                                    className="gold-btn flex-1" style={{ padding: '10px', fontSize: '10px', letterSpacing: '2px' }}>
+                                    DEPOSIT
                                 </button>
                             )}
                         </div>
