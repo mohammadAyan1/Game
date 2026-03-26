@@ -1,11 +1,3 @@
-// import express from "express"
-// import { authMiddleware } from "../middleware/authMiddleware.js"
-// import { transactionController } from "../controllers/transaction.controller.js"
-// const transactionRouter = express.Router()
-
-// transactionRouter.get("/get-total-coin", authMiddleware, transactionController.getTransaction)
-
-// export default transactionRouter
 
 
 import express from "express"

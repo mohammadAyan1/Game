@@ -7,10 +7,10 @@ export const userController = {
     // ✅ REGISTER
     register: async (req, res) => {
         try {
-            const { username, email, phone, password } = req.body;
+            const { username, phone, password } = req.body;
 
             // ✅ validation
-            if (!username || !email || !phone || !password) {
+            if (!username || !phone || !password) {
                 return res.status(400).json({
                     message: "All fields are required",
                     success: false
@@ -26,13 +26,13 @@ export const userController = {
 
             // ✅ check existing user (username OR email)
             const [existingUser] = await pool.query(
-                "SELECT * FROM users WHERE Username = ? OR Email = ?",
-                [username, email]
+                "SELECT * FROM users WHERE Username = ?",
+                [username]
             );
 
             if (existingUser.length > 0) {
                 return res.status(400).json({
-                    message: "Username or Email already exists",
+                    message: "Username  already exists",
                     success: false
                 });
             }
@@ -42,9 +42,9 @@ export const userController = {
 
             // ✅ insert user
             await pool.query(
-                `INSERT INTO users (Username, Email, Phone, Password) 
+                `INSERT INTO users (Username, Phone, Password) 
          VALUES (?, ?, ?, ?)`,
-                [username, email, phone, hashedPassword]
+                [username, phone, hashedPassword]
             );
 
             return res.status(201).json({
@@ -63,19 +63,19 @@ export const userController = {
     // ✅ LOGIN (Username OR Email)
     login: async (req, res) => {
         try {
-            const { username, email, password } = req.body;
+            const { phone, password } = req.body;
 
-            if ((!username && !email) || !password) {
+            if (!phone || !password) {
                 return res.status(400).json({
-                    message: "Username/Email and password required",
+                    message: "phone and password required",
                     success: false
                 });
             }
 
             // ✅ find user
             const [users] = await pool.query(
-                "SELECT * FROM users WHERE Username = ? OR Email = ?",
-                [username || null, email || null]
+                "SELECT * FROM users WHERE Phone = ?",
+                [phone]
             );
 
             if (users.length === 0) {
@@ -107,13 +107,7 @@ export const userController = {
             console.log(token, "FGHJK");
 
 
-            // ✅ COOKIE SET Localhost
-            // res.cookie("token", token, {
-            //     httpOnly: true,
-            //     secure: false,
-            //     sameSite: "lax",   // 🔥 change here
-            //     maxAge: 24 * 60 * 60 * 1000
-            // });
+
 
             // ✅ COOKIE SET Live
             res.cookie("token", token, {
@@ -130,7 +124,6 @@ export const userController = {
                 user: {
                     id: user.id,
                     username: user.Username,
-                    email: user.Email,
                     phone: user.Phone,
                     role: user.Role
                 }

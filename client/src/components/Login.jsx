@@ -74,7 +74,7 @@ export default function Login() {
 
     const navigate = useNavigate()
 
-    const [form, setForm] = useState({ email: '', password: '' })
+    const [form, setForm] = useState({ phone: '', password: '' })
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
     const [submitted, setSubmitted] = useState(false)
@@ -83,8 +83,11 @@ export default function Login() {
 
     const validate = () => {
         const e = {}
-        if (!form.email) e.email = 'Email is required'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email address'
+        if (!form.phone) e.phone = 'Phone Number is required'
+        if (form.phone.length > 10 || form.phone.length < 10) {
+            e.phone = "Number Should be 10 digit"
+        }
+        // else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email address'
         if (!form.password) e.password = 'Password is required'
         else if (form.password.length < 6) e.password = 'Minimum 6 characters'
         return e
@@ -205,13 +208,13 @@ export default function Login() {
                         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                             <div className="float-up float-up-2">
                                 <InputField
-                                    label="EMAIL ADDRESS"
-                                    type="email"
-                                    placeholder="you@example.com"
+                                    label="Phone Number"
+                                    type="text"
+                                    placeholder="1234567890"
                                     icon={Mail}
-                                    value={form.email}
-                                    onChange={update('email')}
-                                    error={errors.email}
+                                    value={form.phone}
+                                    onChange={update('phone')}
+                                    error={errors.phone}
                                 />
                             </div>
 
