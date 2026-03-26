@@ -1,8 +1,29 @@
+// import express from "express";
+// import {
+//     createTransaction,
+//     getTransaction,
+//     getTransactionStatus
+// } from "../controller/transactionController.js";
+
+// const router = express.Router();
+
+// router.post("/create", createTransaction);
+// router.get("/:id", getTransaction);
+// router.get("/status/:id", getTransactionStatus);
+
+
+// export default router;
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  FILE: backend/src/routes/transactionRoutes.js      ║
+// ║  Transaction se related routes (change nahi kiya)   ║
+// ╚══════════════════════════════════════════════════════╝
+
 import express from "express";
 import {
     createTransaction,
     getTransaction,
-    getTransactionStatus
+    getTransactionStatus,
 } from "../controller/transactionController.js";
 
 const router = express.Router();
@@ -10,6 +31,5 @@ const router = express.Router();
 router.post("/create", createTransaction);
 router.get("/:id", getTransaction);
 router.get("/status/:id", getTransactionStatus);
-
 
 export default router;

@@ -75,6 +75,8 @@ export default function Deposit() {
         }
     }
 
+    
+
     return (
         <div className="min-h-screen flex items-center justify-center p-5 py-10 relative overflow-hidden"
             style={{ background: G.bg, fontFamily: "'Space Mono',monospace" }}>
@@ -257,3 +259,5 @@ export default function Deposit() {
         </div>
     )
 }
+
+

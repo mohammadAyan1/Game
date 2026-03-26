@@ -9,6 +9,9 @@ const api = axios.create({
     }
 });
 
+console.log(import.meta.env.VITE_BACKEND_MAIN_URL);
+
+
 // ✅ Request Interceptor (optional)
 api.interceptors.request.use(
     (config) => {
