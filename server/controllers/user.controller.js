@@ -118,8 +118,8 @@ export const userController = {
             // ✅ COOKIE SET Live
             res.cookie("token", token, {
                 httpOnly: true,
-                secure: true,       // 🔥 required
-                sameSite: "none",
+                secure: process.env.NODE == "Production" ? true : false,       // 🔥 required
+                sameSite: process.env.NODE == "Production" ? "none" : "lax",
                 maxAge: 24 * 60 * 60 * 1000
             });
 
