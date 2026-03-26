@@ -104,7 +104,7 @@ export const userController = {
                 { expiresIn: "1d" }
             );
 
-            console.log(token, "FGHJK");
+            // console.log(token, "FGHJK");
 
 
 
@@ -125,7 +125,8 @@ export const userController = {
                     id: user.id,
                     username: user.Username,
                     phone: user.Phone,
-                    role: user.Role
+                    role: user.Role,
+                    token
                 }
             });
 
