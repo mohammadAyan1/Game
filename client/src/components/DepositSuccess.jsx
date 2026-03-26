@@ -5,7 +5,7 @@
 // URL: /deposit/success?txnId=xxx&coins=xxx&status=success
 
 import { useState, useEffect } from 'react'
-import { data, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../utils/api'
 
 const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL //'http://localhost:3001'
@@ -21,7 +21,7 @@ export default function DepositSuccess() {
     const [txn, setTxn] = useState(null)
     const [verified, setVerified] = useState(false)
     const [checking, setChecking] = useState(true)
-    const [userId, setUserId] = useState(null)
+    // const [userId, setUserId] = useState(null)
 
 
     // useEffect(() => {
@@ -94,6 +94,8 @@ export default function DepositSuccess() {
             } catch (err) {
                 setVerified(statusFromUrl === 'success')
                 setChecking(false)
+                console.error(err);
+
             }
         }
 

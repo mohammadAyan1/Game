@@ -247,6 +247,9 @@ export async function sendPaymentProof({
       const res = await fetch(`${BASE}/sendPhoto`, { method: "POST", body: form });
       const data = await res.json();
 
+      console.log(data, "This is the image data upload");
+
+
       if (data.ok) {
         msgId = data.result.message_id;
         console.log(`📸 Photo sent to Telegram, msgId=${msgId}`);
