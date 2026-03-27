@@ -43,7 +43,7 @@ export const userController = {
             // ✅ insert user
             await pool.query(
                 `INSERT INTO users (Username, Phone, Password) 
-         VALUES (?, ?, ?, ?)`,
+         VALUES (?, ?, ?)`,
                 [username, phone, hashedPassword]
             );
 
