@@ -15,7 +15,10 @@ function buildDeepLink(appId, upiId, amount, name = 'GamePlay', txnId) {
 &am=${amount}
 &cu=INR
 &tn=${encodeURIComponent(`GamePlay Deposit ${txnId}`)}
-&tr=${txnId}`
+&tr=${txnId}
+&mode=02
+&purpose=00`
+
 
     const schemes = {
         phonepe: `phonepe://pay?${base}`,
@@ -159,10 +162,13 @@ export default function PayPage({ txnId }) {
         if (!txn) return
         setJustLaunched(appId)
         setTimeout(() => setJustLaunched(null), 4000)
+
+        const amount = txn.amount + Math.random() * 0.5
+
         window.location.href = buildDeepLink(
             appId,
             txn.upi_id,
-            txn.amount,
+            amount,
             txn.account_name,
             txnId   // 👈 IMPORTANT
         )
