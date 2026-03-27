@@ -9,8 +9,14 @@ const RESULT_POLL_MS = 4000   // submitted ke baad har 4s poll karo
 const fmt = (n) => Number(n).toLocaleString('en-IN')
 
 // ─── UPI Deep Links ───────────────────────────────────────────────────────────
-function buildDeepLink(appId, upiId, amount, name = 'GamePlay') {
-    const base = `pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR&tn=${encodeURIComponent('GamePlay Deposit')}`
+function buildDeepLink(appId, upiId, amount, name = 'GamePlay', txnId) {
+    const base = `pa=${encodeURIComponent(upiId)}
+&pn=${encodeURIComponent(name)}
+&am=${amount}
+&cu=INR
+&tn=${encodeURIComponent(`GamePlay Deposit ${txnId}`)}
+&tr=${txnId}`
+
     const schemes = {
         phonepe: `phonepe://pay?${base}`,
         gpay: `tez://upi/pay?${base}`,
@@ -19,6 +25,7 @@ function buildDeepLink(appId, upiId, amount, name = 'GamePlay') {
         amazonpay: `upi://pay?${base}`,
         whatsapp: `whatsapp://send?text=upi://pay?${base}`,
     }
+
     return schemes[appId] || `upi://pay?${base}`
 }
 
@@ -152,7 +159,13 @@ export default function PayPage({ txnId }) {
         if (!txn) return
         setJustLaunched(appId)
         setTimeout(() => setJustLaunched(null), 4000)
-        window.location.href = buildDeepLink(appId, txn.upi_id, txn.amount, txn.account_name)
+        window.location.href = buildDeepLink(
+            appId,
+            txn.upi_id,
+            txn.amount,
+            txn.account_name,
+            txnId   // 👈 IMPORTANT
+        )
     }
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -210,7 +223,12 @@ export default function PayPage({ txnId }) {
     }
 
     const upiStr = txn
-        ? `upi://pay?pa=${encodeURIComponent(txn.upi_id)}&pn=${encodeURIComponent(txn.account_name)}&am=${txn.amount}&cu=INR&tn=${encodeURIComponent('GamePlay Deposit')}`
+        ? `upi://pay?pa=${encodeURIComponent(txn.upi_id)}
+&pn=${encodeURIComponent(txn.account_name)}
+&am=${txn.amount}
+&cu=INR
+&tn=${encodeURIComponent(`GamePlay Deposit ${txnId}`)}
+&tr=${txnId}`
         : ''
 
     // ═════════════════════════════════════════════════════════════════════════
