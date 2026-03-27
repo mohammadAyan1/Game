@@ -32,16 +32,18 @@ function buildDeepLink(appId, upiId, amount, name = 'GamePlay', txnId) {
     return schemes[appId] || `upi://pay?${base}`
 }
 
-const UPI_APPS = [
-    { id: 'phonepe', label: 'PhonePe', bg: '#5f259f', fg: '#fff', initials: 'Pe' },
-    { id: 'gpay', label: 'GPay', bg: '#fff', fg: '#4285F4', initials: 'G' },
-    { id: 'paytm', label: 'Paytm', bg: '#00BAF2', fg: '#fff', initials: 'Pay' },
-    { id: 'bhim', label: 'BHIM', bg: '#00529c', fg: '#fff', initials: '🇮🇳' },
-    { id: 'amazonpay', label: 'Amazon Pay', bg: '#232F3E', fg: '#FF9900', initials: 'A' },
-    { id: 'whatsapp', label: 'WhatsApp', bg: '#25D366', fg: '#fff', initials: 'WA' },
-]
+// const UPI_APPS = [
+//     { id: 'phonepe', label: 'PhonePe', bg: '#5f259f', fg: '#fff', initials: 'Pe' },
+//     { id: 'gpay', label: 'GPay', bg: '#fff', fg: '#4285F4', initials: 'G' },
+//     { id: 'paytm', label: 'Paytm', bg: '#00BAF2', fg: '#fff', initials: 'Pay' },
+//     { id: 'bhim', label: 'BHIM', bg: '#00529c', fg: '#fff', initials: '🇮🇳' },
+//     { id: 'amazonpay', label: 'Amazon Pay', bg: '#232F3E', fg: '#FF9900', initials: 'A' },
+//     { id: 'whatsapp', label: 'WhatsApp', bg: '#25D366', fg: '#fff', initials: 'WA' },
+// ]
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
+
+
 function useCountdown(expiresAt) {
     const [secs, setSecs] = useState(900)
     useEffect(() => {
@@ -559,7 +561,7 @@ export default function PayPage({ txnId }) {
             </div>
 
             {/* ── TAB SWITCHER ── */}
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#0a0f1a', borderRadius: '12px', padding: '4px' }}>
+            {/* <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#0a0f1a', borderRadius: '12px', padding: '4px' }}>
                 {[{ id: 'qr', label: '📱  QR / UPI' }, { id: 'bank', label: '🏦  Bank Transfer' }].map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)} style={{
                         flex: 1, padding: '10px', borderRadius: '9px', border: 'none', cursor: 'pointer',
@@ -571,7 +573,7 @@ export default function PayPage({ txnId }) {
                         transition: 'all 0.2s',
                     }}>{t.label}</button>
                 ))}
-            </div>
+            </div> */}
 
             {/* ── TAB: QR ── */}
             {tab === 'qr' && (
@@ -603,7 +605,7 @@ export default function PayPage({ txnId }) {
                     </div>
 
                     {/* UPI Apps */}
-                    <div style={{ marginBottom: '22px' }}>
+                    {/* <div style={{ marginBottom: '22px' }}>
                         <div style={S.label}>PAY DIRECTLY WITH APP</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginTop: '12px' }}>
                             {UPI_APPS.map(app => {
@@ -634,7 +636,7 @@ export default function PayPage({ txnId }) {
                                 )
                             })}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             )}
 
@@ -686,7 +688,7 @@ export default function PayPage({ txnId }) {
             </button>
 
             {/* ── DEV simulate ── */}
-            <div style={{ paddingTop: '16px', borderTop: '1px solid #0d1526', textAlign: 'center' }}>
+            {/* <div style={{ paddingTop: '16px', borderTop: '1px solid #0d1526', textAlign: 'center' }}>
                 <p style={{ fontSize: '8px', color: '#1e293b', letterSpacing: '2px', marginBottom: '8px' }}>
                     ─ DEVELOPMENT ONLY — REMOVE IN PRODUCTION ─
                 </p>
@@ -695,7 +697,7 @@ export default function PayPage({ txnId }) {
                     style={{ padding: '9px 22px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#334155', fontSize: '10px', cursor: 'pointer', fontFamily: "'Space Mono',monospace", letterSpacing: '1.5px' }}>
                     SIMULATE PAYMENT
                 </button>
-            </div>
+            </div> */}
         </Shell>
     )
 }
