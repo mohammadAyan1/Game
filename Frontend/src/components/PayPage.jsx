@@ -14,8 +14,8 @@ function buildDeepLink(appId, upiId, amount, name = 'GamePlay', txnId) {
 &pn=${encodeURIComponent(name)}
 &am=${amount}
 &cu=INR
-&tn=${encodeURIComponent(`GamePlay Deposit ${txnId}`)}
-&tr=${txnId}
+&tn=${encodeURIComponent(`GamePlay Deposit`)}
+&tr=${1}
 &mode=02
 &purpose=00`
 
