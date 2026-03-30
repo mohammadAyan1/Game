@@ -3,11 +3,32 @@ import http from "http"
 import { Server } from "socket.io"
 import cors from "cors"
 import cookieParser from "cookie-parser";
-import userRoutes from "./routers/user.router.js";
+import authRoutes from "./routers/auth.router.js";
 import jwt from "jsonwebtoken"
 import pool from "./config/db.js";
 import dotenv from "dotenv"
 import transactionRouter from "./routers/tracsaction.routes.js";
+import adminPackage from "./routers/admin.routes.js"
+
+import bankRoutes from "./routers/bank.routes.js";
+
+import withdrawalRoutes from "./routers/withdrawal.routes.js";
+
+import userRoutes from "./routers/user.routes.js"
+
+
+import statsRoutes from "./routers/stats.routes.js";
+
+// import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express()
 
 dotenv.config()
@@ -23,7 +44,7 @@ app.use(cors({
         process.env.BACKEND_URL_PAYMENT,
     ],
     credentials: true, // 🔥 MUST
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', "PUT"],
 }))
 app.use(express.json())
 app.use(cookieParser());
@@ -94,7 +115,7 @@ app.get("/api/checkuser", async (req, res) => {
     try {
         const token = req.cookies?.token;
 
-        console.log(token, 'ASDFGHJKL');
+
 
 
         console.log(process.env.JWT_SECRET, "FGHJ");
@@ -110,7 +131,7 @@ app.get("/api/checkuser", async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         const [users] = await pool.query(
-            "SELECT id, Username, Email, Phone, Role FROM users WHERE id = ?",
+            "SELECT id, Username, Phone, Role FROM users WHERE id = ?",
             [decoded.id]
         );
 
@@ -126,7 +147,6 @@ app.get("/api/checkuser", async (req, res) => {
             success: true,
             id: users[0].id,
             username: users[0].Username,
-            email: users[0].Email,
             phone: users[0].Phone,
             role: users[0].Role
 
@@ -142,9 +162,18 @@ app.get("/api/checkuser", async (req, res) => {
     }
 })
 
-app.use("/api/user", userRoutes)
-app.use("/api/wallet", transactionRouter)
 
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use("/api/auth", authRoutes)
+app.use("/api/wallet", transactionRouter)
+app.use("/api/admin", adminPackage)
+app.use("/api/withdrawal", withdrawalRoutes)
+app.use("/api/admin/bank", bankRoutes);
+app.use("/api/user", userRoutes)
+
+app.use("/api/stats", statsRoutes)
 
 server.listen(5000, () => {
     console.log("Server running on 5000")

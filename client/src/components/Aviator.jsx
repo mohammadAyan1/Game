@@ -49,15 +49,20 @@ const GOLD_GLOW = "#D4A84760"
 const RED_CRASH = "#C0392B"
 
 // ── API helper ────────────────────────────────────────────────────────────────
-async function saveGameResult({ coins, type }) {
+async function saveGameResult({ coins, type, game = "aviator" }) {
     try {
+
+
+        console.log(game, "this is the game");
+
+
         const res = await fetch(
             `${import.meta.env.VITE_BACKEND_MAIN_URL}/api/wallet/save-game-result`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",        // sends cookie (JWT)
-                body: JSON.stringify({ coins, type }),
+                body: JSON.stringify({ coins, type, game: game || "aviator" }),
             }
         )
         const data = await res.json()
@@ -130,14 +135,16 @@ export default function Aviator() {
             setHistory(h => [{ value: cp, id: Date.now() }, ...h.slice(0, 9)])
 
 
-            // ── If user had an active bet and did NOT cash out → save LOSS ──
-            if (activeBetRef.current > 0 && !cashedOutRef.current) {
+
+            const betAmountAtCrash = activeBetRef.current
+            const alreadyCashed = cashedOutRef.current
+
+            if (betAmountAtCrash > 0 && !alreadyCashed) {
                 await saveGameResult({
-                    coins: activeBetRef.current,
-                    type: "loss"
+                    coins: betAmountAtCrash,
+                    type: "loss",
+                    game: "aviator"
                 })
-                // Refresh coin balance in context
-                if (typeof refreshCoins === "function") refreshCoins()
             }
 
             // Reset round state
@@ -162,12 +169,15 @@ export default function Aviator() {
         if (activeBetRef.current <= 0) return     // no active bet
 
         cashedOutRef.current = true
-        const winnings = Math.floor(activeBetRef.current * currentMultiplier)
+        // const winnings = Math.floor(activeBetRef.current * currentMultiplier)
+
+        const totalReturn = Math.floor(activeBetRef.current * currentMultiplier)
+        const profit = totalReturn - activeBetRef.current
 
         setCashout(currentMultiplier)
 
         // Save PROFIT transaction
-        await saveGameResult({ coins: winnings, type: "profit" })
+        await saveGameResult({ coins: profit, type: "profit", game: "aviator" })
         if (typeof refreshCoins === "function") refreshCoins()
     }, [])
 

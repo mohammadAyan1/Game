@@ -98,7 +98,7 @@ export default function Login() {
         const errs = validate()
         if (Object.keys(errs).length) { setErrors(errs); return }
 
-        const res = await api.post("/user", form)
+        const res = await api.post("/auth", form)
 
         if (!res.data.success) return
 

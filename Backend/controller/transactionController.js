@@ -10,10 +10,11 @@ const expiresIn15 = () => {
   return istTime.toISOString().slice(0, 19).replace("T", " ");
 };
 
+
+
 const pickBank = async () => {
-  const [banks] = await pool.query(
-    "SELECT * FROM bank_accounts WHERE is_active=1 AND collected < daily_limit ORDER BY RAND() LIMIT 1"
-  );
+  // Randomly select one bank account
+  const [banks] = await pool.query("SELECT * FROM bank_accounts ORDER BY RAND() LIMIT 1");
   return banks[0] || null;
 };
 

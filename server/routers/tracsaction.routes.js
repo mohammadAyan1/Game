@@ -11,5 +11,10 @@ transactionRouter.get("/get-total-coin", authMiddleware, transactionController.g
 
 // POST /api/wallet/save-game-result → save profit or loss after each round
 transactionRouter.post("/save-game-result", authMiddleware, transactionController.saveGameResult)
+transactionRouter.post("/withdrawal", authMiddleware, transactionController.withdraw)
+transactionRouter.get("/history", authMiddleware, transactionController.getAllTransactionsWithBalance)
+
+transactionRouter.delete("/withdrawal/:txId", authMiddleware, transactionController.deleteWithdrawal);
+transactionRouter.put("/withdrawal/:txId", authMiddleware, transactionController.updateWithdrawal);
 
 export default transactionRouter

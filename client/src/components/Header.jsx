@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 
 import { useRef } from "react";
 
-
+import LogoutModal from './LogoutModal';
 
 import { useApp } from '../context/AppContext'
 const NAV = [
@@ -24,6 +24,7 @@ export default function Header() {
     const [open, setOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const [openUser, setOpenUser] = useState(false)
+    const [showLogout, setShowLogout] = useState(false)
 
     const [active, setActive] = useState('')
 
@@ -178,51 +179,73 @@ export default function Header() {
                             )}
                             {/* Avatar */}
 
-                            <div
-                                className="relative flex items-center"
-                                onMouseEnter={() => {
-                                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                                    setOpenUser(true);
-                                }}
-                                onMouseLeave={() => {
-                                    timeoutRef.current = setTimeout(() => {
-                                        setOpenUser(false);
-                                    }, 200);
-                                }}
-                            >
-                                {/* Avatar Button */}
-                                <button
-                                    className="flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
-                                    style={{
-                                        width: '38px',
-                                        height: '38px',
-                                        background: '#D4A84712',
-                                        border: '1px solid #D4A84730'
-                                    }}
-                                >
-                                    <User size={15} color="#D4A847" />
-                                </button>
+                            {
 
-                                {/* Dropdown */}
-                                {openUser && (
+                                user?.success && (
                                     <div
-                                        className="absolute top-12 right-0 w-40 rounded-lg shadow-lg p-3 z-50"
-                                        style={{
-                                            background: '#111',
-                                            border: '1px solid #D4A84730'
+                                        className="relative flex items-center"
+                                        onMouseEnter={() => {
+                                            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                                            setOpenUser(true);
+                                        }}
+                                        onMouseLeave={() => {
+                                            timeoutRef.current = setTimeout(() => {
+                                                setOpenUser(false);
+                                            }, 200);
                                         }}
                                     >
-                                        <div className="flex flex-col gap-2">
-                                            <button className="text-left text-sm hover:text-yellow-400">
-                                                Profile
-                                            </button>
-                                            <button className="text-left text-sm hover:text-red-400">
-                                                Logout
-                                            </button>
-                                        </div>
+                                        {/* Avatar Button */}
+                                        <button
+                                            className="flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
+                                            style={{
+                                                width: '38px',
+                                                height: '38px',
+                                                background: '#D4A84712',
+                                                border: '1px solid #D4A84730'
+                                            }}
+                                        >
+                                            <User size={15} color="#D4A847" />
+                                        </button>
+
+                                        {/* Dropdown */}
+                                        {openUser && (
+                                            <div
+                                                className="absolute top-12 right-0 w-40 rounded-lg shadow-lg p-3 z-50"
+                                                style={{
+                                                    background: '#111',
+                                                    border: '1px solid #D4A84730'
+                                                }}
+                                            >
+                                                <div className="flex flex-col gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            navigate('/profile');
+                                                            setOpenUser(false);
+                                                        }}
+                                                        className="text-left text-sm hover:text-yellow-400">
+                                                        Profile
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setShowLogout(true); setOpenUser(false) }}
+                                                        className="text-left text-sm hover:text-red-400"
+                                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D4A84770', fontFamily: "'Space Mono',monospace", fontSize: '11px' }}
+                                                    >
+                                                        Logout
+                                                    </button>
+                                                    <button onClick={() => {
+                                                        navigate("/admin-dashboard")
+                                                        setOpenUser(false);
+
+                                                    }}>
+                                                        Admin Dashboard
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                )
+                            }
+
                         </div>
 
                         {/* Mobile burger */}
@@ -292,6 +315,12 @@ export default function Header() {
                 <div className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
                     style={{ background: 'linear-gradient(90deg,transparent 5%,#8B691440 30%,#D4A84725 50%,#8B691440 70%,transparent 95%)' }} />
             </header>
+
+
+            <LogoutModal
+                isOpen={showLogout}
+                onClose={() => setShowLogout(false)}
+            />
         </>
     )
 }

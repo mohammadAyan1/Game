@@ -1,14 +1,15 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Zap, Shield, Clock, CheckCircle2 } from 'lucide-react'
-
+import { useApp } from '../context/AppContext'
+import api from '../utils/api'
 const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL  //|| 'http://localhost:3001'   // payment-server
 const PAY_GATEWAY = import.meta.env.VITE_FRONTEND_PAYMENT_URL //'http://localhost:5174'   // payment-gateway website
 
 const G = { gold: '#D4A847', bright: '#F0C96A', bg: '#070604', border: '#D4A84728' }
 
-const PACKAGES = [
+let PACKAGES = [
     { id: 1, rupees: 1, coins: 130, bonus: 30, pct: '30%', label: 'STARTER', tag: null, popular: false },
     { id: 2, rupees: 2, coins: 350, bonus: 100, pct: '40%', label: 'CLASSIC', tag: 'POPULAR', popular: true },
     { id: 3, rupees: 5, coins: 750, bonus: 250, pct: '50%', label: 'ELITE', tag: 'BEST VALUE', popular: false },
@@ -16,6 +17,8 @@ const PACKAGES = [
     { id: 5, rupees: 25, coins: 4250, bonus: 1750, pct: '70%', label: 'PLATINUM', tag: '🔥 HOT', popular: false },
     { id: 6, rupees: 50, coins: 9000, bonus: 4000, pct: '80%', label: 'DIAMOND', tag: 'MAX BONUS', popular: false },
 ]
+
+// let PACKAGES
 
 const fmt = (n) => Number(n).toLocaleString('en-IN')
 
@@ -38,12 +41,40 @@ function Coin({ size = 18, color = G.gold }) {
 
 export default function Deposit() {
     const navigate = useNavigate()
-    const [selected, setSel] = useState(PACKAGES[1])
+
+    const { user } = useApp();
+
+
+    useEffect(() => {
+        console.log(user?.id);
+    }, [user])
+
+
+    useEffect(() => {
+
+        const fetchPackage = async () => {
+            try {
+                const res = await api.get("/admin/package")
+                console.log(res);
+
+                PACKAGES = res?.data?.data
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetchPackage()
+
+    }, [])
+
+    const [selected, setSel] = useState(PACKAGES[0])
     const [custom, setCustom] = useState('')
     const [useCustom, setUC] = useState(false)
     const [hovered, setHov] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+
+
 
     const amt = useCustom ? Number(custom) || 0 : selected.rupees
     const coins = useCustom ? Math.floor((Number(custom) || 0) * 1.3) : selected.coins
@@ -59,7 +90,7 @@ export default function Deposit() {
             const res = await fetch(`${PAYMENT_API}/api/txn/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: amt, coins, returnUrl }),
+                body: JSON.stringify({ amount: amt, coins, returnUrl, userId: user?.id }),
             })
             const data = await res.json()
 
@@ -75,7 +106,7 @@ export default function Deposit() {
         }
     }
 
-    
+
 
     return (
         <div className="min-h-screen flex items-center justify-center p-5 py-10 relative overflow-hidden"

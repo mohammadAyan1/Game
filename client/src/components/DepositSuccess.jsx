@@ -3,10 +3,10 @@
 // Ye page tab dikhega jab user payment ke baad
 // payment gateway se wapas aata hai
 // URL: /deposit/success?txnId=xxx&coins=xxx&status=success
-
+///////////////////////////////////////////////////!SECTION
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import api from '../utils/api'
+// import api from '../utils/api'
 
 const PAYMENT_API = import.meta.env.VITE_BACKEND_PAYMENT_URL //'http://localhost:3001'
 const fmt = (n) => Number(n).toLocaleString('en-IN')
@@ -21,48 +21,8 @@ export default function DepositSuccess() {
     const [txn, setTxn] = useState(null)
     const [verified, setVerified] = useState(false)
     const [checking, setChecking] = useState(true)
-    // const [userId, setUserId] = useState(null)
 
-
-    // useEffect(() => {
-    //     if (!txnId) { setChecking(false); return }
-
-    //     const fetchUserId = async () => {
-    //         const res = await api.get("/checkuser")
-
-    //         setUserId(res?.data?.id)
-    //         return res.data   // 🔥 IMPORTANT
-    //     }
-
-    //     fetchUserId()
-
-
-
-
-    //     console.log(userId);
-
-
-    //     // Final verification — backend se confirm karo
-    //     fetch(`${PAYMENT_API}/api/txn/status/${txnId}?userId=${userId}`)
-    //         .then(r => r.json())
-    //         .then(data => {
-    //             setVerified(data.status === 'success')
-    //             setChecking(false)
-    //         })
-    //         .catch(() => {
-    //             // URL pe status=success aaya hai to trust karo
-    //             setVerified(statusFromUrl === 'success')
-    //             setChecking(false)
-    //         })
-
-    //     // Full txn details bhi fetch karo
-    //     fetch(`${PAYMENT_API}/api/txn/${txnId}`)
-    //         .then(r => r.json())
-    //         .then(data => { if (!data.error) setTxn(data) })
-    //         .catch(() => { })
-    // }, [txnId, statusFromUrl])
-
-
+    // const verified = true
 
     useEffect(() => {
         if (!txnId) { setChecking(false); return }
@@ -70,19 +30,20 @@ export default function DepositSuccess() {
         const init = async () => {
             try {
                 // 🔥 pehle user lo
-                const res = await api.get("/checkuser")
-                const id = res?.data?.id
+                // const res = await api.get("/checkuser")
+                // const id = res?.data?.id
 
-                console.log("UserId:", id)
+                // console.log("UserId:", id)
 
-                // 🔥 yahi use karo (state nahi)
-                const statusRes = await fetch(
-                    `${PAYMENT_API}/api/txn/status/${txnId}?userId=${id}`
-                )
+                // // 🔥 yahi use karo (state nahi)
+                // const statusRes = await fetch(
+                //     `${PAYMENT_API}/api/txn/status/${txnId}?userId=${id}`
+                // )
 
-                const data = await statusRes.json()
+                // const data = await statusRes.json()
 
-                setVerified(data.status === 'success')
+                // setVerified(data.status === 'success')
+                setVerified(true)
                 setChecking(false)
 
                 // 🔥 txn details

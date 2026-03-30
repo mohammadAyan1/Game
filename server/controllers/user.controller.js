@@ -1,151 +1,90 @@
 import pool from "../config/db.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 export const userController = {
-
-    // ✅ REGISTER
-    register: async (req, res) => {
+    getAllUserCltr: async (req, res) => {
         try {
-            const { username, phone, password } = req.body;
+            const { role, id } = req.user;
 
-            // ✅ validation
-            if (!username || !phone || !password) {
-                return res.status(400).json({
-                    message: "All fields are required",
-                    success: false
-                });
-            }
-
-            if (password.length < 8) {
-                return res.status(400).json({
-                    message: "Password must be at least 8 characters",
-                    success: false
-                });
-            }
-
-            // ✅ check existing user (username OR email)
-            const [existingUser] = await pool.query(
-                "SELECT * FROM users WHERE Username = ?",
-                [username]
-            );
-
-            if (existingUser.length > 0) {
-                return res.status(400).json({
-                    message: "Username  already exists",
-                    success: false
-                });
-            }
-
-            // ✅ hash password
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            // ✅ insert user
-            await pool.query(
-                `INSERT INTO users (Username, Phone, Password) 
-         VALUES (?, ?, ?)`,
-                [username, phone, hashedPassword]
-            );
-
-            return res.status(201).json({
-                message: "User registered successfully",
-                success: true
-            });
-
-        } catch (error) {
-            return res.status(500).json({
-                message: error.message,
-                success: false
-            });
-        }
-    },
-
-    // ✅ LOGIN (Username OR Email)
-    login: async (req, res) => {
-        try {
-            const { phone, password } = req.body;
-
-            if (!phone || !password) {
-                return res.status(400).json({
-                    message: "phone and password required",
-                    success: false
-                });
-            }
-
-            // ✅ find user
-            const [users] = await pool.query(
-                "SELECT * FROM users WHERE Phone = ?",
-                [phone]
-            );
-
-            if (users.length === 0) {
+            if (!id) {
                 return res.status(401).json({
-                    message: "Invalid credentials",
+                    message: "Please Login First",
                     success: false
                 });
             }
 
-            const user = users[0];
-
-            // ✅ password match
-            const isMatch = await bcrypt.compare(password, user.Password);
-
-            if (!isMatch) {
-                return res.status(401).json({
-                    message: "Invalid credentials",
+            if (role !== "Admin") {
+                return res.status(403).json({
+                    message: "User not Admin",
                     success: false
                 });
             }
 
-            // ✅ JWT token
-            const token = jwt.sign(
-                { id: user.id, role: user.Role },
-                process.env.JWT_SECRET,
-                { expiresIn: "1d" }
-            );
+            // ✅ USERS + TOTALS
+            const [users] = await pool.execute(`
+            SELECT 
+                u.id,
+                u.Username,
+                u.Phone,
+                u.Role,
 
-            // console.log(token, "FGHJK");
+                COALESCE(SUM(CASE 
+                    WHEN t.type IN ('profit','topup') AND t.status='success' THEN t.coins
+                    WHEN t.type IN ('loss','withdrawal') AND t.status='success' THEN -t.coins
+                    ELSE 0
+                END),0) AS totalCoins,
 
+                COALESCE(SUM(CASE 
+                    WHEN t.type='profit' AND t.status='success' THEN t.coins
+                    ELSE 0
+                END),0) AS totalProfit,
 
+                COALESCE(SUM(CASE 
+                    WHEN t.type='loss' AND t.status='success' THEN t.coins
+                    ELSE 0
+                END),0) AS totalLoss,
 
+                COALESCE(SUM(CASE 
+                    WHEN t.type='withdrawal' AND t.status='success' THEN t.coins
+                    ELSE 0
+                END),0) AS totalWithdrawal
 
-            // ✅ COOKIE SET Live
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE == "Production" ? true : false,       // 🔥 required
-                sameSite: process.env.NODE == "Production" ? "none" : "lax",
-                maxAge: 24 * 60 * 60 * 1000
+            FROM users u
+            LEFT JOIN transactions t ON u.id = t.user_id
+            GROUP BY u.id
+        `);
+
+            // ✅ ALL TRANSACTIONS
+            const [transactions] = await pool.execute(`
+            SELECT t.*, wr.upi_id 
+            FROM transactions t
+            LEFT JOIN withdrawal_requests wr 
+                ON wr.transaction_id = t.id
+            ORDER BY t.created_at DESC
+        `);
+
+            // ✅ MAP
+            const data = users.map(user => {
+                return {
+                    ...user,
+                    transactions: transactions.filter(tx => tx.user_id == user.id)
+                };
             });
-
 
             return res.status(200).json({
-                message: "Login successful",
                 success: true,
-                user: {
-                    id: user.id,
-                    username: user.Username,
-                    phone: user.Phone,
-                    role: user.Role,
-                    token
-                }
+                count: data.length,
+                data
             });
 
         } catch (error) {
+            console.error(error);
             return res.status(500).json({
-                message: error.message,
+                message: "Server Error",
                 success: false
             });
         }
     },
+}
 
-    // ✅ LOGOUT
-    logout: (req, res) => {
-        res.clearCookie("token");
 
-        return res.json({
-            message: "Logged out successfully",
-            success: true
-        });
-    }
 
-};

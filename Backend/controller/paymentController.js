@@ -73,10 +73,7 @@ export const submitProof = async (req, res) => {
     const [rows] = await pool.query(
       `SELECT t.*, 
               b.upi_id, 
-              b.account_name, 
-              b.account_no, 
-              b.ifsc_code, 
-              b.bank_name
+              b.qr_image
        FROM transactions t
        JOIN bank_accounts b ON t.bank_id = b.id
        WHERE t.id = ?`,
@@ -142,6 +139,10 @@ export const submitProof = async (req, res) => {
 // Jab admin koi button dabata hai ya message bhejta hai,
 // Telegram is URL pe POST request bhejta hai
 export const adminCallback = async (req, res) => {
+
+  // console.log(req);
+
+
   try {
     await handleTelegramUpdate(req.body);
     return res.sendStatus(200); // Telegram ko 200 chahiye, warna retry karta hai

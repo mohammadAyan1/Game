@@ -6,25 +6,41 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
 
-    // 🔥 GLOBAL STATES
     const [coin, setCoin] = useState(0);
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(false);
+
+    // ✅ FIX: true rakho — taaki refresh pe UserRoute turant /login na bheje
+    //    pehle API call complete ho, phir route decide ho
+    const [loading, setLoading] = useState(true);
 
     // ─────────────────────────────────────────────
-    // 🔹 FETCH USER
+    // FETCH USER
     // ─────────────────────────────────────────────
     const fetchUser = async () => {
         try {
             const res = await api.get("/checkuser");
             setUser(res?.data);
         } catch (err) {
+            console.log(err);
             setUser(null);
         }
     };
 
     // ─────────────────────────────────────────────
-    // 🔹 FETCH COINS
+    // LOGOUT
+    // ─────────────────────────────────────────────
+    const logout = async () => {
+        try {
+            const res = await api.get("/auth/logout");
+            console.log(res);
+            setUser(null);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    // ─────────────────────────────────────────────
+    // FETCH COINS
     // ─────────────────────────────────────────────
     const fetchCoins = async () => {
         try {
@@ -34,7 +50,6 @@ export const AppProvider = ({ children }) => {
             console.log(err);
         }
     };
-
 
     const refreshCoins = async () => {
         try {
@@ -46,22 +61,18 @@ export const AppProvider = ({ children }) => {
     };
 
     // ─────────────────────────────────────────────
-    // 🔹 INIT LOAD (ONLY ONCE)
+    // INIT LOAD — ek baar
     // ─────────────────────────────────────────────
     useEffect(() => {
         const init = async () => {
             setLoading(true);
-            await fetchUser();
-            await fetchCoins();
-            setLoading(false);
+            await fetchUser();   // pehle user check
+            await fetchCoins();  // phir coins
+            setLoading(false);   // ab routes decide honge
         };
-
         init();
     }, []);
 
-    // ─────────────────────────────────────────────
-    // 🔹 EXPOSE EVERYTHING
-    // ─────────────────────────────────────────────
     return (
         <AppContext.Provider
             value={{
@@ -70,9 +81,10 @@ export const AppProvider = ({ children }) => {
                 loading,
                 fetchCoins,
                 fetchUser,
-                setCoin,   // future use
+                setCoin,
                 setUser,
-                refreshCoins
+                refreshCoins,
+                logout,
             }}
         >
             {children}
@@ -80,5 +92,4 @@ export const AppProvider = ({ children }) => {
     );
 };
 
-// 🔥 CUSTOM HOOK
 export const useApp = () => useContext(AppContext);

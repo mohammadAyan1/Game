@@ -133,7 +133,7 @@ export default function Register() {
         console.log('====================================');
 
 
-        const res = await api.post("/user/register", form)
+        const res = await api.post("/auth/register", form)
 
         if (!res?.success) return
         console.log('====================================');
