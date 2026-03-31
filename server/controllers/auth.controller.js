@@ -140,7 +140,11 @@ export const authController = {
 
     // ✅ LOGOUT
     logout: (req, res) => {
-        res.clearCookie("token");
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE == "Production" ? true : false,
+            sameSite: process.env.NODE == "Production" ? "none" : "lax",
+        });
 
         return res.json({
             message: "Logged out successfully",
