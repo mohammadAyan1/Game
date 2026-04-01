@@ -55,29 +55,38 @@ const io = new Server(server, {
     cors: { origin: "*" }
 })
 
-let multiplier = 1
+let multiplier = 0
 let crashPoint = generateCrash()
+
+// function generateCrash() {
+//     const r = Math.random()
+
+//     let crash = Math.floor((1 / (1 - r)) * 100) / 100
+
+//     if (crash > 5) {
+//         crash = 5
+//     }
+
+//     return crash
+// }
+
 
 function generateCrash() {
     const r = Math.random()
-
     let crash = Math.floor((1 / (1 - r)) * 100) / 100
-
-    if (crash > 5) {
-        crash = 5
+    // Add a chance to crash early (e.g., 20% of the time)
+    if (Math.random() < 0.2) {
+        crash = Math.random() * 0.9 + 0.1   // between 0.1 and 1.0
     }
-
+    if (crash > 5) crash = 5
     return crash
 }
 
 function startGame() {
 
-    multiplier = 1
+    multiplier = 0 //1
     crashPoint = generateCrash()
 
-    console.log('====================================');
-    console.log(crashPoint);
-    console.log('====================================');
 
     const interval = setInterval(() => {
 

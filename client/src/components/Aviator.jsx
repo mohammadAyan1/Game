@@ -13,8 +13,15 @@ const PAD = { left: 52, bottom: 48, right: 24, top: 24 }
 const INNER_W = W - PAD.left - PAD.right
 const INNER_H = H - PAD.top - PAD.bottom
 
+
+// New maximum multiplier (crash point capped at 5)
+const MAX_MULTIPLIER = 5
+
+
 function mToXY(m) {
-    const t = Math.min((m - 1) / 9, 1)
+    // const t = Math.min((m - 1) / 9, 1)
+    // t ranges from 0 (m=0) to 1 (m=MAX_MULTIPLIER)
+    const t = Math.min(m / MAX_MULTIPLIER, 1)
     const x = PAD.left + t * INNER_W
     const easedT = Math.pow(t, 0.55)
     const y = H - PAD.bottom - easedT * INNER_H
@@ -36,9 +43,11 @@ const X_TICKS = [0, 1, 2, 3, 4, 5, 6].map(i => ({
     label: `${i * 10}s`,
     x: PAD.left + (i / 6) * INNER_W,
 }))
+
 const Y_TICKS = [1, 2, 3, 5, 10].map(v => ({
     label: `${v}x`,
-    y: H - PAD.bottom - Math.pow(Math.min((v - 1) / 9, 1), 0.55) * INNER_H,
+    // y: H - PAD.bottom - Math.pow(Math.min((v - 1) / 9, 1), 0.55) * INNER_H,
+    y: H - PAD.bottom - Math.pow(Math.min(v / MAX_MULTIPLIER, 1), 0.55) * INNER_H,
 }))
 
 // ── Gold palette ──────────────────────────────────────────────────────────────
@@ -75,7 +84,7 @@ async function saveGameResult({ coins, type, game = "aviator" }) {
 
 // ── component ─────────────────────────────────────────────────────────────────
 export default function Aviator() {
-    const [multiplier, setMultiplier] = useState(1)
+    const [multiplier, setMultiplier] = useState(0)
     const [crashed, setCrashed] = useState(false)
     const [cashout, setCashout] = useState(null)
     const [betAmount, setBetAmount] = useState("0")
@@ -83,7 +92,7 @@ export default function Aviator() {
     const [showCheck, setShowCheck] = useState(false)
     const [phase, setPhase] = useState("waiting")
     const [history, setHistory] = useState([])
-    const [pts, setPts] = useState([mToXY(1)])
+    const [pts, setPts] = useState([mToXY(0)])
     const crashRef = useRef(null)
 
     // Track whether user has an active bet this round
@@ -121,7 +130,7 @@ export default function Aviator() {
                 activeBetRef.current > 0 &&
                 !cashedOutRef.current &&
                 !isNaN(autoVal) &&
-                autoVal >= 1.1 &&
+                autoVal >= 0.1 && //1.1
                 num >= autoVal
             ) {
                 triggerCashout(num)
@@ -155,8 +164,8 @@ export default function Aviator() {
 
             setTimeout(() => {
                 setPhase("waiting")
-                setPts([mToXY(1)])
-                setMultiplier(1)
+                setPts([mToXY(0)])
+                setMultiplier(0)
             }, 2900)
         })
 
@@ -171,13 +180,24 @@ export default function Aviator() {
         cashedOutRef.current = true
         // const winnings = Math.floor(activeBetRef.current * currentMultiplier)
 
-        const totalReturn = Math.floor(activeBetRef.current * currentMultiplier)
+        // const totalReturn = Math.floor(activeBetRef.current * currentMultiplier)
+
+
+        const bet = activeBetRef.current
+        const totalReturn = bet * currentMultiplier
+        const net = totalReturn - bet   // positive = profit, negative = loss
         const profit = totalReturn - activeBetRef.current
 
         setCashout(currentMultiplier)
 
+
+        // Determine type based on multiplier
+        const type = currentMultiplier >= 1 ? "profit" : "loss"
+        // The amount to store is always positive
+        const coinsToSave = type === "profit" ? net : -net
+
         // Save PROFIT transaction
-        await saveGameResult({ coins: profit, type: "profit", game: "aviator" })
+        await saveGameResult({ coins: coinsToSave, type, game: "aviator" })
         if (typeof refreshCoins === "function") refreshCoins()
     }, [])
 

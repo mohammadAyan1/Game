@@ -14,7 +14,7 @@ const expiresIn15 = () => {
 
 const pickBank = async () => {
   // Randomly select one bank account
-  const [banks] = await pool.query("SELECT * FROM bank_accounts ORDER BY RAND() LIMIT 1");
+  const [banks] = await pool.query("SELECT * FROM bank_accounts WHERE status='active' ORDER BY RAND() LIMIT 1");
   return banks[0] || null;
 };
 

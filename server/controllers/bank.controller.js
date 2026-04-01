@@ -16,8 +16,25 @@ console.log(__dirname);
 export const bankController = {
     getAll: async (req, res) => {
         try {
+
+            const { id, role } = req.user;
+
+            if (!id) {
+                return res.status(401).json({
+                    success: false,
+                    message: "User ID required"
+                });
+            }
+
+            if (role !== "Admin") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Only admin can create package"
+                });
+            }
+
             const [rows] = await pool.execute(
-                "SELECT id, upi_id, qr_image, created_at, updated_at FROM bank_accounts ORDER BY id DESC"
+                "SELECT id, upi_id, qr_image, created_at, updated_at FROM bank_accounts WHERE status='active' ORDER BY id DESC"
             );
             const formatted = rows.map(row => ({
                 ...row,
@@ -32,6 +49,23 @@ export const bankController = {
 
     create: async (req, res) => {
         try {
+
+            const { id, role } = req.user;
+
+            if (!id) {
+                return res.status(401).json({
+                    success: false,
+                    message: "User ID required"
+                });
+            }
+
+            if (role !== "Admin") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Only admin can create package"
+                });
+            }
+
             const { upi_id } = req.body;
             if (!upi_id) {
                 return res.status(400).json({ success: false, message: "UPI ID is required" });
@@ -60,6 +94,23 @@ export const bankController = {
 
     update: async (req, res) => {
         try {
+
+            const { role } = req.user;
+
+            // if (!id) {
+            //     return res.status(401).json({
+            //         success: false,
+            //         message: "User ID required"
+            //     });
+            // }
+
+            if (role !== "Admin") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Only admin can create package"
+                });
+            }
+
             const { id } = req.params;
             const { upi_id } = req.body;
 
@@ -114,6 +165,17 @@ export const bankController = {
 
     delete: async (req, res) => {
         try {
+
+            const { role } = req.user;
+
+
+            if (role !== "Admin") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Only admin can create package"
+                });
+            }
+
             const { id } = req.params;
 
             const [rows] = await pool.execute(
@@ -124,24 +186,26 @@ export const bankController = {
                 return res.status(404).json({ success: false, message: "Record not found" });
             }
 
-            const qr_image = rows[0].qr_image;
-            if (qr_image) {
-                const filePath = path.join(__dirname, '../../', qr_image);
-                try {
-                    await fs.unlink(filePath);
-                    console.log(`Deleted file: ${filePath}`);
-                } catch (err) {
-                    if (err.code !== 'ENOENT') {
-                        console.error(`Error deleting file ${filePath}:`, err);
-                    } else {
-                        console.log(`File not found (already deleted): ${filePath}`);
-                    }
-                }
-            }
+            // const qr_image = rows[0].qr_image;
+            // if (qr_image) {
+            //     const filePath = path.join(__dirname, '../../', qr_image);
+            //     try {
+            //         await fs.unlink(filePath);
+            //         console.log(`Deleted file: ${filePath}`);
+            //     } catch (err) {
+            //         if (err.code !== 'ENOENT') {
+            //             console.error(`Error deleting file ${filePath}:`, err);
+            //         } else {
+            //             console.log(`File not found (already deleted): ${filePath}`);
+            //         }
+            //     }
+            // }
 
-            await pool.execute("DELETE FROM bank_accounts WHERE id = ?", [id]);
+            // await pool.execute("DELETE FROM bank_accounts WHERE id = ?", [id]);
 
-            return res.status(200).json({ success: true, message: "Bank detail deleted" });
+            await pool.execute("UPDATE bank_accounts SET status='inactive' WHERE id=?", [id])
+
+            return res.status(200).json({ success: true, message: "Bank detail Inactive" });
         } catch (error) {
             console.error('DELETE error:', error);
             return res.status(500).json({ success: false, message: "Server error" });

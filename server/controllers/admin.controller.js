@@ -120,7 +120,7 @@ const adminController = {
             }
 
             const { id } = req.params;
-            const { rupees, coins, bonus, pct, label, tag, popular } = req.body;
+            const { rupees, coins, bonus, pct, label, tag, popular } = req.body?.form;
 
             const [result] = await pool.query(
                 `UPDATE coin_packages 
