@@ -974,7 +974,7 @@ export default function AdminPackages() {
         try {
             const res = await api.put(`/admin/package/${modal.data.id}`, { form })
             const data = res
-            if (data.success) {
+            if (data?.data?.success) {
                 success("Package updated successfully ✦");
                 setModal(null);
                 fetchPackages();
@@ -991,7 +991,7 @@ export default function AdminPackages() {
         try {
             const res = await api.delete(`/admin/package/${delPkg?.id}`)
             const data = res
-            if (data.success) {
+            if (data?.data?.success) {
                 success("Package deleted ✦");
                 setDelPkg(null);
                 fetchPackages();
