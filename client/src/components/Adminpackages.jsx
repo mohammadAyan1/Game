@@ -956,7 +956,7 @@ export default function AdminPackages() {
         try {
             const res = await api.post("/admin/package", { form })
             const data = res
-            console.log(data,"ASDFGHJKL");
+            console.log(data, "ASDFGHJKL");
             if (data?.data?.success) {
                 success("Package created successfully ✦");
                 setModal(null);
