@@ -1,7 +1,7 @@
 import pool from "../config/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import uuidv4 from "uuid"
+import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import imagekit from "../config/imagekit.js";
 
