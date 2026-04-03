@@ -13,6 +13,7 @@
 
 // import pool from "../config/db.js";
 // import { editAdminMessage } from "./telegramService.js";
+// import { confirmTopup, rejectTopup } from "../controller/transactionController.js";
 
 // const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 // const BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
@@ -241,6 +242,12 @@
 
 // ╔══════════════════════════════════════════════════════╗
 // ║  FILE: backend/src/services/telegramBotHandler.js   ║
+// ║  Admin ke Telegram button press handle karna        ║
+// ║  Flow:                                              ║
+// ║   1. Admin ACCEPT dabata hai → confirmTopup()       ║
+// ║      → DB success + real_balance update             ║
+// ║   2. Admin REJECT dabata hai → bot remark maangta   ║
+// ║   3. Admin remark likhta hai → rejectTopup()        ║
 // ╚══════════════════════════════════════════════════════╝
 
 import pool from "../config/db.js";
@@ -249,17 +256,19 @@ import { confirmTopup, rejectTopup } from "../controller/transactionController.j
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+// In-memory store for pending reject remarks
 const pendingRemarks = new Map();
 
+// ──────────────────────────────────────────────────────────────
+//  MAIN EXPORT: Called from paymentController (already in background)
 // ──────────────────────────────────────────────────────────────
 export async function handleTelegramUpdate(body) {
   console.log("📨 Telegram update:", JSON.stringify(body).slice(0, 200));
   try {
     if (body.callback_query) {
-      // Process callback query asynchronously (already background)
-      handleCallbackQuery(body.callback_query).catch(err => {
-        console.error("❌ Callback query error:", err.message);
-      });
+      // ✅ Process callback query
+      await handleCallbackQuery(body.callback_query);
     } else if (body.message) {
       await handleMessage(body.message);
     }
@@ -269,16 +278,18 @@ export async function handleTelegramUpdate(body) {
 }
 
 // ──────────────────────────────────────────────────────────────
+//  Admin ne ACCEPT ya REJECT button dabaya
+// ──────────────────────────────────────────────────────────────
 async function handleCallbackQuery(cbq) {
   const data = cbq.data || "";
   const adminUserId = String(cbq.from.id);
-  // ✅ Fallback to admin's personal chat ID if message missing
+  // ✅ Fallback: use admin's personal chat if message chat not available
   const chatId = cbq.message?.chat?.id || adminUserId;
   const callbackId = cbq.id;
 
-  console.log(`🔘 Callback: "${data}" from ${adminUserId} (chat ${chatId})`);
+  console.log(`🔘 Callback: "${data}" from admin ${adminUserId} (chat ${chatId})`);
 
-  // ✅ Answer callback IMMEDIATELY – fire and forget (no await)
+  // ✅ Answer callback IMMEDIATELY (fire & forget, don't await)
   fetch(`${BASE}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -287,7 +298,7 @@ async function handleCallbackQuery(cbq) {
       text: "⏳ Processing...",
       show_alert: false,
     }),
-  }).catch(() => { }); // Ignore errors – callback may already be expired
+  }).catch(() => { }); // ignore errors
 
   const firstColon = data.indexOf(":");
   if (firstColon === -1) {
@@ -302,31 +313,40 @@ async function handleCallbackQuery(cbq) {
     return;
   }
 
-  // Fetch transaction
+  // Fetch transaction from DB
   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
   if (!rows.length) {
-    await sendMsg(chatId, "❌ Transaction not found!");
+    await sendMsg(chatId, "❌ Transaction not found in DB!");
     return;
   }
 
   const txn = rows[0];
   const msgId = txn.telegram_msg_id || cbq.message?.message_id;
 
+  // ───────────── ACCEPT ─────────────
   if (action === "accept") {
     const result = await confirmTopup(txnId);
     if (!result.success) {
       await sendMsg(chatId, "❌ ACCEPT failed: " + result.message);
       return;
     }
+
     await editAdminMessage({
-      msgId, txnId, amount: txn.amount, coins: txn.coins,
-      utrNumber: txn.utr_number, userName: txn.user_id, action: "accept"
+      msgId,
+      txnId,
+      amount: txn.amount,
+      coins: txn.coins,
+      utrNumber: txn.utr_number,
+      userName: txn.user_id,
+      action: "accept",
     });
-    await sendMsg(chatId, `✅ Txn <code>${txnId}</code> ACCEPTED! ${txn.coins} coins added.`);
-    console.log(`✅ ${txnId} ACCEPTED — ${result.coinsAdded} coins added`);
+
+    await sendMsg(chatId, `✅ Txn <code>${txnId}</code> ACCEPTED! ${txn.coins} coins added to real balance.`);
+    console.log(`✅ TxnId=${txnId} ACCEPTED — ${result.coinsAdded} coins added to real_balance`);
     return;
   }
 
+  // ───────────── REJECT ─────────────
   if (action === "reject") {
     pendingRemarks.set(adminUserId, { txnId, msgId, chatId });
     await sendMsg(
@@ -334,9 +354,10 @@ async function handleCallbackQuery(cbq) {
       `❌ <b>Reject kar rahe ho?</b>\n\n` +
       `TxnID: <code>${txnId}</code>\n` +
       `Amount: ₹${Number(txn.amount).toLocaleString("en-IN")}\n\n` +
-      `Reject ka reason likho (ya <code>skip</code>):`
+      `Ab <b>reject ka reason</b> type karo aur bhejo.\n` +
+      `(Ya sirf <code>skip</code> likho bina reason ke.)`
     );
-    console.log(`⏳ ${txnId} — waiting for reject remark`);
+    console.log(`⏳ TxnId=${txnId} — waiting for reject remark from admin ${adminUserId}`);
     return;
   }
 
@@ -344,38 +365,55 @@ async function handleCallbackQuery(cbq) {
 }
 
 // ──────────────────────────────────────────────────────────────
+//  Admin ne remark bheja (reject ke baad)
+// ──────────────────────────────────────────────────────────────
 async function handleMessage(msg) {
   const adminUserId = String(msg.from?.id);
   const chatId = msg.chat?.id || adminUserId;
   const text = (msg.text || "").trim();
 
-  if (!pendingRemarks.has(adminUserId)) return;
+  if (!pendingRemarks.has(adminUserId)) {
+    console.log(`ℹ️ No pending remark for admin ${adminUserId}, ignoring`);
+    return;
+  }
 
   const { txnId, msgId } = pendingRemarks.get(adminUserId);
   pendingRemarks.delete(adminUserId);
 
   const remark = text.toLowerCase() === "skip" ? "Rejected by admin" : text;
+
+  // Call rejectTopup to update status and remark
   const result = await rejectTopup(txnId, remark);
   if (!result.success) {
-    await sendMsg(chatId, `⚠️ Reject failed: ${result.message}`);
+    await sendMsg(chatId, `⚠️ Failed to reject transaction: ${result.message}`);
     return;
   }
 
+  // Fetch updated transaction for message edit
   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
   if (!rows.length) return;
   const txn = rows[0];
 
   await editAdminMessage({
-    msgId: msgId || txn.telegram_msg_id, txnId,
-    amount: txn.amount, coins: txn.coins,
-    utrNumber: txn.utr_number, userName: txn.user_id,
-    action: "reject", remark,
+    msgId: msgId || txn.telegram_msg_id,
+    txnId,
+    amount: txn.amount,
+    coins: txn.coins,
+    utrNumber: txn.utr_number,
+    userName: txn.user_id,
+    action: "reject",
+    remark,
   });
 
-  await sendMsg(chatId, `✅ Transaction <code>${txnId}</code> REJECTED.\n📝 Reason: <i>${remark}</i>`);
-  console.log(`❌ ${txnId} REJECTED — remark: "${remark}"`);
+  await sendMsg(
+    chatId,
+    `✅ Transaction <code>${txnId}</code> REJECT kar diya.\n📝 Reason: <i>${remark}</i>`
+  );
+  console.log(`❌ TxnId=${txnId} REJECTED — remark: "${remark}"`);
 }
 
+// ──────────────────────────────────────────────────────────────
+//  HELPERS
 // ──────────────────────────────────────────────────────────────
 async function sendMsg(chatId, text) {
   if (!chatId) return;
@@ -383,7 +421,11 @@ async function sendMsg(chatId, text) {
     const res = await fetch(`${BASE}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML",
+      }),
     });
     const data = await res.json();
     if (!data.ok) console.error("⚠️ sendMsg error:", JSON.stringify(data));
@@ -391,3 +433,160 @@ async function sendMsg(chatId, text) {
     console.error("❌ sendMsg error:", err.message);
   }
 }
+
+
+
+
+
+// // ╔══════════════════════════════════════════════════════╗
+// // ║  FILE: backend/src/services/telegramBotHandler.js   ║
+// // ╚══════════════════════════════════════════════════════╝
+
+// import pool from "../config/db.js";
+// import { editAdminMessage } from "./telegramService.js";
+// import { confirmTopup, rejectTopup } from "../controller/transactionController.js";
+
+// const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+// const BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
+// const pendingRemarks = new Map();
+
+// // ──────────────────────────────────────────────────────────────
+// export async function handleTelegramUpdate(body) {
+//   console.log("📨 Telegram update:", JSON.stringify(body).slice(0, 200));
+//   try {
+//     if (body.callback_query) {
+//       // Process callback query asynchronously (already background)
+//       handleCallbackQuery(body.callback_query).catch(err => {
+//         console.error("❌ Callback query error:", err.message);
+//       });
+//     } else if (body.message) {
+//       await handleMessage(body.message);
+//     }
+//   } catch (err) {
+//     console.error("❌ handleTelegramUpdate error:", err.message);
+//   }
+// }
+
+// // ──────────────────────────────────────────────────────────────
+// async function handleCallbackQuery(cbq) {
+//   const data = cbq.data || "";
+//   const adminUserId = String(cbq.from.id);
+//   // ✅ Fallback to admin's personal chat ID if message missing
+//   const chatId = cbq.message?.chat?.id || adminUserId;
+//   const callbackId = cbq.id;
+
+//   console.log(`🔘 Callback: "${data}" from ${adminUserId} (chat ${chatId})`);
+
+//   // ✅ Answer callback IMMEDIATELY – fire and forget (no await)
+//   fetch(`${BASE}/answerCallbackQuery`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({
+//       callback_query_id: callbackId,
+//       text: "⏳ Processing...",
+//       show_alert: false,
+//     }),
+//   }).catch(() => { }); // Ignore errors – callback may already be expired
+
+//   const firstColon = data.indexOf(":");
+//   if (firstColon === -1) {
+//     await sendMsg(chatId, "⚠️ Invalid callback data");
+//     return;
+//   }
+
+//   const action = data.slice(0, firstColon);
+//   const txnId = data.slice(firstColon + 1);
+//   if (!txnId) {
+//     await sendMsg(chatId, "⚠️ TxnId missing");
+//     return;
+//   }
+
+//   // Fetch transaction
+//   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
+//   if (!rows.length) {
+//     await sendMsg(chatId, "❌ Transaction not found!");
+//     return;
+//   }
+
+//   const txn = rows[0];
+//   const msgId = txn.telegram_msg_id || cbq.message?.message_id;
+
+//   if (action === "accept") {
+//     const result = await confirmTopup(txnId);
+//     if (!result.success) {
+//       await sendMsg(chatId, "❌ ACCEPT failed: " + result.message);
+//       return;
+//     }
+//     await editAdminMessage({
+//       msgId, txnId, amount: txn.amount, coins: txn.coins,
+//       utrNumber: txn.utr_number, userName: txn.user_id, action: "accept"
+//     });
+//     await sendMsg(chatId, `✅ Txn <code>${txnId}</code> ACCEPTED! ${txn.coins} coins added.`);
+//     console.log(`✅ ${txnId} ACCEPTED — ${result.coinsAdded} coins added`);
+//     return;
+//   }
+
+//   if (action === "reject") {
+//     pendingRemarks.set(adminUserId, { txnId, msgId, chatId });
+//     await sendMsg(
+//       chatId,
+//       `❌ <b>Reject kar rahe ho?</b>\n\n` +
+//       `TxnID: <code>${txnId}</code>\n` +
+//       `Amount: ₹${Number(txn.amount).toLocaleString("en-IN")}\n\n` +
+//       `Reject ka reason likho (ya <code>skip</code>):`
+//     );
+//     console.log(`⏳ ${txnId} — waiting for reject remark`);
+//     return;
+//   }
+
+//   await sendMsg(chatId, "⚠️ Unknown action: " + action);
+// }
+
+// // ──────────────────────────────────────────────────────────────
+// async function handleMessage(msg) {
+//   const adminUserId = String(msg.from?.id);
+//   const chatId = msg.chat?.id || adminUserId;
+//   const text = (msg.text || "").trim();
+
+//   if (!pendingRemarks.has(adminUserId)) return;
+
+//   const { txnId, msgId } = pendingRemarks.get(adminUserId);
+//   pendingRemarks.delete(adminUserId);
+
+//   const remark = text.toLowerCase() === "skip" ? "Rejected by admin" : text;
+//   const result = await rejectTopup(txnId, remark);
+//   if (!result.success) {
+//     await sendMsg(chatId, `⚠️ Reject failed: ${result.message}`);
+//     return;
+//   }
+
+//   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
+//   if (!rows.length) return;
+//   const txn = rows[0];
+
+//   await editAdminMessage({
+//     msgId: msgId || txn.telegram_msg_id, txnId,
+//     amount: txn.amount, coins: txn.coins,
+//     utrNumber: txn.utr_number, userName: txn.user_id,
+//     action: "reject", remark,
+//   });
+
+//   await sendMsg(chatId, `✅ Transaction <code>${txnId}</code> REJECTED.\n📝 Reason: <i>${remark}</i>`);
+//   console.log(`❌ ${txnId} REJECTED — remark: "${remark}"`);
+// }
+
+// // ──────────────────────────────────────────────────────────────
+// async function sendMsg(chatId, text) {
+//   if (!chatId) return;
+//   try {
+//     const res = await fetch(`${BASE}/sendMessage`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+//     });
+//     const data = await res.json();
+//     if (!data.ok) console.error("⚠️ sendMsg error:", JSON.stringify(data));
+//   } catch (err) {
+//     console.error("❌ sendMsg error:", err.message);
+//   }
+// }
