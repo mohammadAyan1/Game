@@ -14,6 +14,8 @@ const NAV = [
     { label: 'Coin Toss', id: 'coin-toss', url: "/cointoss" },
     { label: 'Color Game', id: 'color-game', url: "/colorgame" },
     { label: 'Leaderboard', id: 'leaderboard', url: "/leaderboard" },
+    { label: 'Teen Patti', id: 'teenpatti', url: '/teenpatti' },
+    { label: 'Rummy', id: 'rummy', url: '/rummy' },
 ]
 
 export default function Header() {
@@ -38,7 +40,9 @@ export default function Header() {
     }, [user])
 
 
-    const activePath = ["/aviator", "/cointoss", "/colorgame", "/leaderboard"]
+    // const activePath = ["/aviator", "/cointoss", "/colorgame", "/leaderboard"]
+
+    const activePath = ["/aviator", "/cointoss", "/colorgame", "/leaderboard", "/teenpatti", "/rummy"]
 
     useEffect(() => {
         console.log(locationPath?.pathname);

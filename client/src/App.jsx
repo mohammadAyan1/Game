@@ -17,6 +17,7 @@ import AdminSettings from './components/Admin/Adminsettings'       // ← NEW
 import UserRoute from "./routes/UserRoute"
 import AdminRoute from "./routes/AdminRoute"
 
+
 export default function App() {
   return (
     // ✅ Admin routes me Header NAHI dikhega (AdminDashboard ka apna header hai)
@@ -32,6 +33,8 @@ export default function App() {
         <Route path="/aviator" element={<UserRoute><Aviator /></UserRoute>} />
         <Route path="/deposit" element={<UserRoute><Deposit /></UserRoute>} />
         <Route path="/deposit/success" element={<UserRoute><DepositSuccess /></UserRoute>} />
+        <Route path="/teenpatti" element={<UserRoute><TeenPatti /></UserRoute>} />
+        <Route path="/rummy" element={<UserRoute><Rummy /></UserRoute>} />
       </Route>
 
       {/* ── ADMIN ROUTES (nested, apna Header hai) ── */}
@@ -71,6 +74,8 @@ export default function App() {
 // ──────────────────────────────────────────────
 import { Outlet } from 'react-router-dom'
 import AdminBank from './components/Admin/AdminBank'
+import TeenPatti from './components/Teenpatti'
+import Rummy from './components/Rummy'
 
 function WithHeader() {
   return (

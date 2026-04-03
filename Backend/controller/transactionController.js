@@ -22,8 +22,8 @@ export const createTransaction = async (req, res) => {
   try {
     const { amount, coins, returnUrl, userId } = req.body;
 
-    if (!amount || amount < 1)
-      return res.status(400).json({ error: "Minimum ₹10" });
+    if (!amount || amount < 300)
+      return res.status(400).json({ error: "Minimum ₹300" });
 
     const bank = await pickBank();
     if (!bank)

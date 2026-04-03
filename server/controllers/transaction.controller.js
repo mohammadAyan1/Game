@@ -91,6 +91,94 @@ export const transactionController = {
         }
     },
 
+    // withdraw: async (req, res) => {
+    //     try {
+    //         const { id } = req.user;
+    //         const { coins, upiId } = req.body;
+
+    //         // ── Validation ─────────────────────────────
+    //         if (!id) {
+    //             return res.status(401).json({
+    //                 message: "User must be logged in",
+    //                 success: false
+    //             });
+    //         }
+
+    //         if (!coins || coins <= 0) {
+    //             return res.status(400).json({
+    //                 message: "Invalid withdrawal amount",
+    //                 success: false
+    //             });
+    //         }
+
+    //         if (!upiId || upiId.trim() === "") {
+    //             return res.status(400).json({
+    //                 message: "UPI ID is required",
+    //                 success: false
+    //             });
+    //         }
+
+    //         // ── Get current balance ────────────────────
+    //         const [rows] = await pool.execute(
+    //             `SELECT 
+    //             COALESCE(
+    //                 SUM(
+    //                     CASE 
+    //                         WHEN type IN ('profit', 'topup') THEN coins
+    //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
+    //                         ELSE 0
+    //                     END
+    //                 ), 0
+    //             ) AS totalCoins
+    //          FROM transactions
+    //          WHERE user_id = ? AND status = 'success'`,
+    //             [id]
+    //         );
+
+    //         const totalCoins = rows[0].totalCoins;
+
+    //         // ── Check balance ──────────────────────────
+    //         if (coins > totalCoins) {
+    //             return res.status(400).json({
+    //                 message: "Insufficient balance",
+    //                 success: false
+    //             });
+    //         }
+
+    //         // ── Create transaction ─────────────────────
+    //         const txId = uuidv4();
+
+    //         await pool.execute(
+    //             `INSERT INTO transactions 
+    //             (id, user_id, coins, status, type, created_at) 
+    //          VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
+    //             [txId, id, Math.floor(coins)]
+    //         );
+
+    //         // ── Insert UPI request into new table ──────
+    //         await pool.execute(
+    //             `INSERT INTO withdrawal_requests
+    //             (user_id, transaction_id, amount, upi_id)
+    //          VALUES (?, ?, ?, ?)`,
+    //             [id, txId, Math.floor(coins), upiId]
+    //         );
+
+    //         return res.status(200).json({
+    //             success: true,
+    //             message: "Withdrawal request submitted",
+    //             transactionId: txId
+    //         });
+
+    //     } catch (error) {
+    //         console.error(error);
+    //         return res.status(500).json({
+    //             message: "Server error",
+    //             success: false
+    //         });
+    //     }
+    // },
+
+
     withdraw: async (req, res) => {
         try {
             const { id } = req.user;
@@ -104,9 +192,9 @@ export const transactionController = {
                 });
             }
 
-            if (!coins || coins <= 0) {
+            if (!coins || coins < 100) {
                 return res.status(400).json({
-                    message: "Invalid withdrawal amount",
+                    message: "Minimum withdrawal is 100 coins",
                     success: false
                 });
             }
@@ -118,7 +206,7 @@ export const transactionController = {
                 });
             }
 
-            // ── Get current balance ────────────────────
+            // ── Get wallet balance ────────────────────
             const [rows] = await pool.execute(
                 `SELECT 
                 COALESCE(
@@ -137,11 +225,30 @@ export const transactionController = {
 
             const totalCoins = rows[0].totalCoins;
 
-            // ── Check balance ──────────────────────────
             if (coins > totalCoins) {
                 return res.status(400).json({
                     message: "Insufficient balance",
                     success: false
+                });
+            }
+
+            // ── 🔥 24 HOUR LIMIT CHECK ─────────────────
+            const [limitRows] = await pool.execute(
+                `SELECT COALESCE(SUM(coins),0) as totalWithdraw
+             FROM transactions
+             WHERE user_id = ?
+             AND type = 'withdrawal'
+             AND created_at >= NOW() - INTERVAL 24 HOUR
+             AND status IN ('pending','success','submitted')`,
+                [id]
+            );
+
+            const last24HourWithdraw = limitRows[0].totalWithdraw;
+
+            if (last24HourWithdraw + coins > 5000) {
+                return res.status(400).json({
+                    success: false,
+                    message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
                 });
             }
 
@@ -150,16 +257,15 @@ export const transactionController = {
 
             await pool.execute(
                 `INSERT INTO transactions 
-                (id, user_id, coins, status, type, created_at) 
-             VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
+            (id, user_id, coins, status, type, created_at) 
+            VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
                 [txId, id, Math.floor(coins)]
             );
 
-            // ── Insert UPI request into new table ──────
             await pool.execute(
                 `INSERT INTO withdrawal_requests
-                (user_id, transaction_id, amount, upi_id)
-             VALUES (?, ?, ?, ?)`,
+            (user_id, transaction_id, amount, upi_id)
+            VALUES (?, ?, ?, ?)`,
                 [id, txId, Math.floor(coins), upiId]
             );
 
@@ -329,6 +435,22 @@ export const transactionController = {
     //         const { txId } = req.params;
     //         const { coins, upiId } = req.body;
 
+    //         // ── Validation ─────────────────────────────
+    //         if (!coins || coins <= 0) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: "Invalid withdrawal amount"
+    //             });
+    //         }
+
+    //         if (!upiId || upiId.trim() === "") {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: "UPI ID is required"
+    //             });
+    //         }
+
+    //         // ── Get existing transaction ───────────────
     //         const [rows] = await pool.execute(
     //             `SELECT * FROM transactions 
     //          WHERE id=? AND user_id=? AND type='withdrawal'`,
@@ -336,12 +458,15 @@ export const transactionController = {
     //         );
 
     //         if (!rows.length) {
-    //             return res.status(404).json({ success: false, message: "Not found" });
+    //             return res.status(404).json({
+    //                 success: false,
+    //                 message: "Not found"
+    //             });
     //         }
 
     //         const tx = rows[0];
 
-    //         // ❌ Only pending
+    //         // ❌ Only pending can be edited
     //         if (tx.status !== "pending") {
     //             return res.status(400).json({
     //                 success: false,
@@ -349,18 +474,48 @@ export const transactionController = {
     //             });
     //         }
 
-    //         // update transactions
-    //         await pool.execute(
-    //             `UPDATE transactions SET coins=? WHERE id=?`,
-    //             [coins, txId]
+    //         // ── Get wallet balance (excluding pending withdrawals) ──
+    //         const [balanceRows] = await pool.execute(
+    //             `SELECT 
+    //             COALESCE(
+    //                 SUM(
+    //                     CASE 
+    //                         WHEN type IN ('profit', 'topup') THEN coins
+    //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
+    //                         ELSE 0
+    //                     END
+    //                 ), 0
+    //             ) AS totalCoins
+    //          FROM transactions
+    //          WHERE user_id = ? AND status = 'success'`,
+    //             [id]
     //         );
 
-    //         // update withdrawal table
+    //         const totalCoins = balanceRows[0].totalCoins;
+
+    //         // ── Add back old withdrawal amount (since it's pending) ──
+    //         const availableBalance = totalCoins;
+
+    //         // ✅ Check balance
+    //         if (coins > availableBalance) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: "Insufficient balance"
+    //             });
+    //         }
+
+    //         // ── Update transaction ─────────────────────
+    //         await pool.execute(
+    //             `UPDATE transactions SET coins=? WHERE id=?`,
+    //             [Math.floor(coins), txId]
+    //         );
+
+    //         // ── Update withdrawal request ──────────────
     //         await pool.execute(
     //             `UPDATE withdrawal_requests 
     //          SET amount=?, upi_id=? 
     //          WHERE transaction_id=?`,
-    //             [coins, upiId, txId]
+    //             [Math.floor(coins), upiId, txId]
     //         );
 
     //         return res.json({
@@ -370,10 +525,12 @@ export const transactionController = {
 
     //     } catch (err) {
     //         console.error(err);
-    //         res.status(500).json({ success: false });
+    //         res.status(500).json({
+    //             success: false,
+    //             message: "Server error"
+    //         });
     //     }
     // }
-
 
     updateWithdrawal: async (req, res) => {
         try {
@@ -382,10 +539,10 @@ export const transactionController = {
             const { coins, upiId } = req.body;
 
             // ── Validation ─────────────────────────────
-            if (!coins || coins <= 0) {
+            if (!coins || coins < 100) {
                 return res.status(400).json({
                     success: false,
-                    message: "Invalid withdrawal amount"
+                    message: "Minimum withdrawal is 100 coins"
                 });
             }
 
@@ -412,7 +569,6 @@ export const transactionController = {
 
             const tx = rows[0];
 
-            // ❌ Only pending can be edited
             if (tx.status !== "pending") {
                 return res.status(400).json({
                     success: false,
@@ -420,7 +576,7 @@ export const transactionController = {
                 });
             }
 
-            // ── Get wallet balance (excluding pending withdrawals) ──
+            // ── Wallet balance ─────────────────────────
             const [balanceRows] = await pool.execute(
                 `SELECT 
                 COALESCE(
@@ -439,14 +595,31 @@ export const transactionController = {
 
             const totalCoins = balanceRows[0].totalCoins;
 
-            // ── Add back old withdrawal amount (since it's pending) ──
-            const availableBalance = totalCoins;
-
-            // ✅ Check balance
-            if (coins > availableBalance) {
+            if (coins > totalCoins) {
                 return res.status(400).json({
                     success: false,
                     message: "Insufficient balance"
+                });
+            }
+
+            // ── 🔥 24 HOUR LIMIT CHECK (EXCLUDE OLD TX) ──
+            const [limitRows] = await pool.execute(
+                `SELECT COALESCE(SUM(coins),0) as totalWithdraw
+             FROM transactions
+             WHERE user_id = ?
+             AND type = 'withdrawal'
+             AND created_at >= NOW() - INTERVAL 24 HOUR
+             AND status IN ('pending','success','submitted')
+             AND id != ?`,
+                [id, txId]
+            );
+
+            const last24HourWithdraw = limitRows[0].totalWithdraw;
+
+            if (last24HourWithdraw + coins > 5000) {
+                return res.status(400).json({
+                    success: false,
+                    message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
                 });
             }
 
@@ -456,7 +629,6 @@ export const transactionController = {
                 [Math.floor(coins), txId]
             );
 
-            // ── Update withdrawal request ──────────────
             await pool.execute(
                 `UPDATE withdrawal_requests 
              SET amount=?, upi_id=? 
@@ -476,7 +648,7 @@ export const transactionController = {
                 message: "Server error"
             });
         }
-    }
+    },
 
 };
 

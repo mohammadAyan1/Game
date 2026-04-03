@@ -1306,7 +1306,7 @@ export default function PayPage({ txnId }) {
                         {txn?.qr_image ? (
                             <div style={{ padding: '10px', background: '#ffffff', borderRadius: '18px', border: '1px solid #1e293b', boxShadow: '0 0 40px #38bdf812' }}>
                                 <img
-                                    src={`${APIMAIN}/${txn?.qr_image}`}
+                                    src={`${txn?.qr_image}`}
                                     alt="UPI QR Code"
                                     style={{ width: '200px', height: '200px', objectFit: 'contain', display: 'block' }}
                                     onError={(e) => {

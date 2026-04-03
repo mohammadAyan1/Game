@@ -19,6 +19,13 @@ import userRoutes from "./routers/user.routes.js"
 
 import statsRoutes from "./routers/stats.routes.js";
 
+
+// import { registerTeenPatti } from './game/teenPatti.js'
+
+import { registerTeenPatti } from "./game/teenPatti.js";
+// import { registerRummy } from './game/rummy.js'
+import { registerRummy } from "./game/rummy.js";
+
 // import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -57,18 +64,6 @@ const io = new Server(server, {
 
 let multiplier = 0
 let crashPoint = generateCrash()
-
-// function generateCrash() {
-//     const r = Math.random()
-
-//     let crash = Math.floor((1 / (1 - r)) * 100) / 100
-
-//     if (crash > 5) {
-//         crash = 5
-//     }
-
-//     return crash
-// }
 
 
 function generateCrash() {
@@ -115,6 +110,16 @@ function startGame() {
 
 io.on("connection", (socket) => {
     console.log("player connected")
+    console.log("player connected:", socket.id)
+
+    // Existing aviator stuff stays as-is
+    // (no changes needed to multiplier/crash events)
+
+    // ── Teen Patti ──
+    registerTeenPatti(io, socket)
+
+    // ── Rummy ──
+    registerRummy(io, socket)
 })
 
 startGame()

@@ -1,15 +1,16 @@
 
 
 import pool from "../config/db.js";
-import fs from 'fs/promises';
+// import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import imagekit from "../config/imagekit.js";
+import fs from "fs";
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-console.log(__filename);
-console.log(__dirname);
+// console.log(__filename);
+// console.log(__dirname);
 
 
 
@@ -38,7 +39,7 @@ export const bankController = {
             );
             const formatted = rows.map(row => ({
                 ...row,
-                qr_url: row.qr_image ? `${req.protocol}://${req.get('host')}/${row.qr_image}` : null
+                qr_url: row.qr_image
             }));
             return res.status(200).json({ success: true, data: formatted });
         } catch (error) {
@@ -72,8 +73,22 @@ export const bankController = {
             }
 
             let qr_image = null;
+            // if (req.file) {
+            //     qr_image = `uploads/qr/${req.file.filename}`;
+            // }
+
+
+            // inside create/update
             if (req.file) {
-                qr_image = `uploads/qr/${req.file.filename}`;
+                const filePath = req.file.path;
+
+                const uploaded = await imagekit.upload({
+                    file: fs.readFileSync(filePath),
+                    fileName: req.file.filename,
+                    folder: "/qr"
+                });
+
+                qr_image = uploaded.url; // 🔥 now cloud URL
             }
 
             const [result] = await pool.execute(
@@ -127,25 +142,39 @@ export const bankController = {
             }
 
             let qr_image = current[0].qr_image;
-            if (req.file) {
-                // Delete old file if exists (ignore ENOENT)
-                if (qr_image) {
-                    // const oldPath = path.join(__dirname, '../../', qr_image);
+            // if (req.file) {
+            //     // Delete old file if exists (ignore ENOENT)
+            //     if (qr_image) {
+            //         // const oldPath = path.join(__dirname, '../../', qr_image);
 
-                    const oldPath = path.join(process.cwd(), 'uploads', 'qr', qr_image);
-                    try {
-                        await fs.unlink(oldPath);
-                        console.log(`Deleted old file: ${oldPath}`);
-                    } catch (err) {
-                        if (err.code !== 'ENOENT') {
-                            console.error(`Error deleting old file ${oldPath}:`, err);
-                        } else {
-                            console.log(`Old file not found (already deleted): ${oldPath}`);
-                        }
-                    }
-                }
-                qr_image = `uploads/qr/${req.file.filename}`;
+            //         const oldPath = path.join(process.cwd(), 'uploads', 'qr', qr_image);
+            //         try {
+            //             await fs.unlink(oldPath);
+            //             console.log(`Deleted old file: ${oldPath}`);
+            //         } catch (err) {
+            //             if (err.code !== 'ENOENT') {
+            //                 console.error(`Error deleting old file ${oldPath}:`, err);
+            //             } else {
+            //                 console.log(`Old file not found (already deleted): ${oldPath}`);
+            //             }
+            //         }
+            //     }
+            //     qr_image = `uploads/qr/${req.file.filename}`;
+            // }
+
+
+            // inside create/update
+            if (req.file) {
+                const filePath = req.file.path;
+
+                const uploaded = await imagekit.upload({
+                    file: fs.readFileSync(filePath),
+                    fileName: req.file.filename,
+                    folder: "/qr"
+                });
+                qr_image = uploaded.url; // 🔥 now cloud URL
             }
+
 
             await pool.execute(
                 "UPDATE bank_accounts SET upi_id = ?, qr_image = ? WHERE id = ?",
