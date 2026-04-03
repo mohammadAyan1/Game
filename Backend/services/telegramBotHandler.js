@@ -285,13 +285,14 @@ export async function handleTelegramUpdate(body) {
 async function handleCallbackQuery(cbq) {
   const data = cbq.data || "";
   const adminUserId = String(cbq.from.id);
-  const chatId = cbq.message?.chat?.id;
+  const chatId = cbq.from.id; // 🔧 Use admin's direct chat, not group chat
   const callbackId = cbq.id;
 
   console.log(`🔘 Callback: "${data}" from admin ${adminUserId}`);
 
-  // ✅ CRITICAL FIX: Answer callback IMMEDIATELY to avoid timeout
-  await answerCallback(callbackId, "⏳ Processing...", false);
+  // 🚨 **CRITICAL FIX #1: Answer callback IMMEDIATELY** ✅
+  // Telegram times out after ~30 seconds. Answer first, work later.
+  await answerCallback(callbackId, "⏳ Processing aur hoga...", false);
 
   const firstColon = data.indexOf(":");
   if (firstColon === -1) {
@@ -307,6 +308,20 @@ async function handleCallbackQuery(cbq) {
     return;
   }
 
+  // 🚨 **CRITICAL FIX #2: Do heavy work in background** ✅
+  // Don't await database queries that could be slow
+  handleCallbackAction(action, txnId, chatId, cbq.message?.message_id, adminUserId).catch(
+    (err) => {
+      console.error("❌ handleCallbackAction error:", err.message);
+      sendMsg(chatId, `❌ Error: ${err.message}`).catch(() => {});
+    }
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+//  BACKGROUND: Actual accept/reject logic (no timeout risk)
+// ──────────────────────────────────────────────────────────────
+async function handleCallbackAction(action, txnId, chatId, msgId, adminUserId) {
   // Fetch transaction from DB
   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
   if (!rows.length) {
@@ -315,20 +330,20 @@ async function handleCallbackQuery(cbq) {
   }
 
   const txn = rows[0];
-  const msgId = txn.telegram_msg_id || cbq.message?.message_id;
+  const finalMsgId = txn.telegram_msg_id || msgId;
 
   // ───────────── ACCEPT ─────────────
   if (action === "accept") {
     const result = await confirmTopup(txnId);
 
     if (!result.success) {
-      await sendMsg(chatId, "❌ Failed to accept: " + result.message);
+      await sendMsg(chatId, "❌ ACCEPT failed: " + result.message);
       return;
     }
 
     // Update Telegram message
     await editAdminMessage({
-      msgId,
+      msgId: finalMsgId,
       txnId,
       amount: txn.amount,
       coins: txn.coins,
@@ -337,28 +352,26 @@ async function handleCallbackQuery(cbq) {
       action: "accept",
     });
 
-    console.log(`✅ TxnId=${txnId} ACCEPTED — ${result.coinsAdded} coins added to real_balance`);
+    await sendMsg(chatId, `✅ TxnId <code>${txnId}</code> ACCEPT kar diya!\n👤 User ko ${txn.coins} coins mil gaye.`);
+    console.log(`✅ TxnId=${txnId} ACCEPTED — ${result.coinsAdded} coins added`);
     return;
   }
 
   // ───────────── REJECT ─────────────
   if (action === "reject") {
-    pendingRemarks.set(adminUserId, { txnId, msgId, chatId });
+    pendingRemarks.set(adminUserId, { txnId, msgId: finalMsgId, chatId });
 
     await sendMsg(
       chatId,
       `❌ <b>Reject kar rahe ho?</b>\n\n` +
       `TxnID: <code>${txnId}</code>\n` +
       `Amount: ₹${Number(txn.amount).toLocaleString("en-IN")}\n\n` +
-      `Ab <b>reject ka reason</b> type karo aur bhejo.\n` +
-      `(Ya sirf <code>skip</code> likho bina reason ke.)`
+      `<b>Reject ka reason likho</b> (ya <code>skip</code> likhो):`
     );
 
-    console.log(`⏳ TxnId=${txnId} — waiting for reject remark`);
+    console.log(`⏳ TxnId=${txnId} — waiting for reject remark from admin ${adminUserId}`);
     return;
   }
-
-  await sendMsg(chatId, "⚠️ Unknown action: " + action);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -433,6 +446,12 @@ async function answerCallback(callbackQueryId, text, showAlert = false) {
 
 async function sendMsg(chatId, text) {
   try {
+    // 🔧 Ensure chatId is valid
+    if (!chatId) {
+      console.error("⚠️ sendMsg: chatId is invalid/missing");
+      return { ok: false, error: "chatId missing" };
+    }
+
     const res = await fetch(`${BASE}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -444,10 +463,15 @@ async function sendMsg(chatId, text) {
     });
     const data = await res.json();
 
-    console.log("sky info group");
+    if (!data.ok) {
+      console.error("⚠️ sendMsg error:", JSON.stringify(data));
+      return { ok: false, error: data.description };
+    }
 
-    if (!data.ok) console.error("⚠️ sendMsg error:", JSON.stringify(data));
+    console.log(`✅ Message sent to chat ${chatId}`);
+    return { ok: true, messageId: data.result.message_id };
   } catch (err) {
     console.error("❌ sendMsg error:", err.message);
+    return { ok: false, error: err.message };
   }
 }
