@@ -5,5 +5,7 @@ const routes = express.Router()
 
 
 routes.get("/getAllUser", authMiddleware, userController.getAllUserCltr)
+// In user.routes.js
+routes.get("/referral-stats", authMiddleware, userController.getReferralStats);
 
 export default routes

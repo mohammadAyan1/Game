@@ -84,6 +84,60 @@ export const userController = {
             });
         }
     },
+
+
+
+    // In user.controller.js
+
+    getReferralStats: async (req, res) => {
+        try {
+            const { id } = req.user;
+
+            // Get referrer's playing_id
+            const [userRows] = await pool.execute(
+                `SELECT playing_id FROM users WHERE id = ?`,
+                [id]
+            );
+            if (userRows.length === 0) {
+                return res.status(404).json({ success: false, message: "User not found" });
+            }
+            const myPlayingId = userRows[0].playing_id;
+
+            // Count referrals
+            const [refRows] = await pool.execute(
+                `SELECT id, Username, phone, created_at 
+                 FROM users 
+                 WHERE userReffer_id = ? 
+                 ORDER BY created_at DESC`,
+                [myPlayingId]
+            );
+
+            // Total bonus earned from referral milestones
+            const [bonusRows] = await pool.execute(
+                `SELECT SUM(coins) as totalBonus 
+                 FROM transactions 
+                 WHERE user_id = ? AND type = 'bonus' AND admin_remark = 'referral_milestone'`,
+                [id]
+            );
+
+            return res.status(200).json({
+                success: true,
+                referralCount: refRows.length,
+                totalBonusEarned: bonusRows[0].totalBonus || 0,
+                referrals: refRows.map(r => ({
+                    id: r.id,
+                    username: r.Username,
+                    phone: r.phone,
+                    joinedAt: r.created_at
+                }))
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ success: false, message: "Server error" });
+        }
+
+    },
+
 }
 
 

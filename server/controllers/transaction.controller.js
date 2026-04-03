@@ -1,11 +1,668 @@
 
 
+// import pool from "../config/db.js";
+// import { v4 as uuidv4 } from "uuid";
+
+// export const transactionController = {
+
+//     // ── GET total coins (profit/topup ADD, loss/withdrawal MINUS) ──────────────
+//     getTransaction: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+
+//             if (!id) {
+//                 return res.status(401).json({
+//                     message: "User must be logged in",
+//                     success: false
+//                 });
+//             }
+
+//             const [rows] = await pool.execute(
+//                 `SELECT 
+//                     COALESCE(
+//                         SUM(
+//                             CASE 
+//                                 WHEN type IN ('profit', 'topup') THEN coins
+//                                 WHEN type IN ('loss', 'withdrawal') THEN -coins
+//                                 ELSE 0
+//                             END
+//                         ), 0
+//                     ) AS totalCoins
+//                  FROM transactions
+//                  WHERE user_id = ? AND status = 'success'`,
+//                 [id]
+//             );
+
+//             return res.status(200).json({
+//                 success: true,
+//                 totalCoins: rows[0].totalCoins
+//             });
+
+//         } catch (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: "Server error", success: false });
+//         }
+//     },
+
+//     // ── SAVE game result (profit or loss) ──────────────────────────────────────
+//     saveGameResult: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+//             const { coins, type, game } = req.body;
+
+//             // Validation
+//             if (!id) {
+//                 return res.status(401).json({ message: "User must be logged in", success: false });
+//             }
+
+//             if (!coins || coins <= 0) {
+//                 return res.status(400).json({ message: "Invalid coin amount", success: false });
+//             }
+
+//             if (!["profit", "loss"].includes(type)) {
+//                 return res.status(400).json({ message: "Invalid transaction type", success: false });
+//             }
+
+//             const txId = uuidv4();
+
+
+//             if (["profit", "loss"].includes(type) && !game?.length) {
+//                 return res.status(401).json({
+//                     message: "Game Name is Required",
+//                     success: false
+//                 })
+//             }
+
+//             await pool.execute(
+//                 `INSERT INTO transactions (id, user_id, coins, status, type, created_at,game)
+//                  VALUES (?, ?, ?, 'success', ?, NOW(),?)`,
+//                 [txId, id, Math.floor(coins), type, game]
+//             );
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: type === "profit" ? "Winnings saved!" : "Loss recorded",
+//                 transactionId: txId
+//             });
+
+//         } catch (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: "Server error", success: false });
+//         }
+//     },
+
+//     // withdraw: async (req, res) => {
+//     //     try {
+//     //         const { id } = req.user;
+//     //         const { coins, upiId } = req.body;
+
+//     //         // ── Validation ─────────────────────────────
+//     //         if (!id) {
+//     //             return res.status(401).json({
+//     //                 message: "User must be logged in",
+//     //                 success: false
+//     //             });
+//     //         }
+
+//     //         if (!coins || coins <= 0) {
+//     //             return res.status(400).json({
+//     //                 message: "Invalid withdrawal amount",
+//     //                 success: false
+//     //             });
+//     //         }
+
+//     //         if (!upiId || upiId.trim() === "") {
+//     //             return res.status(400).json({
+//     //                 message: "UPI ID is required",
+//     //                 success: false
+//     //             });
+//     //         }
+
+//     //         // ── Get current balance ────────────────────
+//     //         const [rows] = await pool.execute(
+//     //             `SELECT 
+//     //             COALESCE(
+//     //                 SUM(
+//     //                     CASE 
+//     //                         WHEN type IN ('profit', 'topup') THEN coins
+//     //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
+//     //                         ELSE 0
+//     //                     END
+//     //                 ), 0
+//     //             ) AS totalCoins
+//     //          FROM transactions
+//     //          WHERE user_id = ? AND status = 'success'`,
+//     //             [id]
+//     //         );
+
+//     //         const totalCoins = rows[0].totalCoins;
+
+//     //         // ── Check balance ──────────────────────────
+//     //         if (coins > totalCoins) {
+//     //             return res.status(400).json({
+//     //                 message: "Insufficient balance",
+//     //                 success: false
+//     //             });
+//     //         }
+
+//     //         // ── Create transaction ─────────────────────
+//     //         const txId = uuidv4();
+
+//     //         await pool.execute(
+//     //             `INSERT INTO transactions 
+//     //             (id, user_id, coins, status, type, created_at) 
+//     //          VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
+//     //             [txId, id, Math.floor(coins)]
+//     //         );
+
+//     //         // ── Insert UPI request into new table ──────
+//     //         await pool.execute(
+//     //             `INSERT INTO withdrawal_requests
+//     //             (user_id, transaction_id, amount, upi_id)
+//     //          VALUES (?, ?, ?, ?)`,
+//     //             [id, txId, Math.floor(coins), upiId]
+//     //         );
+
+//     //         return res.status(200).json({
+//     //             success: true,
+//     //             message: "Withdrawal request submitted",
+//     //             transactionId: txId
+//     //         });
+
+//     //     } catch (error) {
+//     //         console.error(error);
+//     //         return res.status(500).json({
+//     //             message: "Server error",
+//     //             success: false
+//     //         });
+//     //     }
+//     // },
+
+
+//     withdraw: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+//             const { coins, upiId } = req.body;
+
+//             // ── Validation ─────────────────────────────
+//             if (!id) {
+//                 return res.status(401).json({
+//                     message: "User must be logged in",
+//                     success: false
+//                 });
+//             }
+
+//             if (!coins || coins < 100) {
+//                 return res.status(400).json({
+//                     message: "Minimum withdrawal is 100 coins",
+//                     success: false
+//                 });
+//             }
+
+//             if (!upiId || upiId.trim() === "") {
+//                 return res.status(400).json({
+//                     message: "UPI ID is required",
+//                     success: false
+//                 });
+//             }
+
+//             // ── Get wallet balance ────────────────────
+//             const [rows] = await pool.execute(
+//                 `SELECT 
+//                 COALESCE(
+//                     SUM(
+//                         CASE 
+//                             WHEN type IN ('profit', 'topup') THEN coins
+//                             WHEN type IN ('loss', 'withdrawal') THEN -coins
+//                             ELSE 0
+//                         END
+//                     ), 0
+//                 ) AS totalCoins
+//              FROM transactions
+//              WHERE user_id = ? AND status = 'success'`,
+//                 [id]
+//             );
+
+//             const totalCoins = rows[0].totalCoins;
+
+//             if (coins > totalCoins) {
+//                 return res.status(400).json({
+//                     message: "Insufficient balance",
+//                     success: false
+//                 });
+//             }
+
+//             // ── 🔥 24 HOUR LIMIT CHECK ─────────────────
+//             const [limitRows] = await pool.execute(
+//                 `SELECT COALESCE(SUM(coins),0) as totalWithdraw
+//              FROM transactions
+//              WHERE user_id = ?
+//              AND type = 'withdrawal'
+//              AND created_at >= NOW() - INTERVAL 24 HOUR
+//              AND status IN ('pending','success','submitted')`,
+//                 [id]
+//             );
+
+//             const last24HourWithdraw = limitRows[0].totalWithdraw;
+
+//             if (last24HourWithdraw + coins > 5000) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
+//                 });
+//             }
+
+//             // ── Create transaction ─────────────────────
+//             const txId = uuidv4();
+
+//             await pool.execute(
+//                 `INSERT INTO transactions 
+//             (id, user_id, coins, status, type, created_at) 
+//             VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
+//                 [txId, id, Math.floor(coins)]
+//             );
+
+//             await pool.execute(
+//                 `INSERT INTO withdrawal_requests
+//             (user_id, transaction_id, amount, upi_id)
+//             VALUES (?, ?, ?, ?)`,
+//                 [id, txId, Math.floor(coins), upiId]
+//             );
+
+//             return res.status(200).json({
+//                 success: true,
+//                 message: "Withdrawal request submitted",
+//                 transactionId: txId
+//             });
+
+//         } catch (error) {
+//             console.error(error);
+//             return res.status(500).json({
+//                 message: "Server error",
+//                 success: false
+//             });
+//         }
+//     },
+
+//     getAllTransactionsWithBalance: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+
+//             if (!id) {
+//                 return res.status(401).json({
+//                     message: "User must be logged in",
+//                     success: false
+//                 });
+//             }
+
+//             // ── 1. Get all transactions + UPI ID ─────────────────────────────
+//             const [rows] = await pool.execute(
+//                 `SELECT 
+//                 t.id,
+//                 t.type,
+//                 t.status,
+//                 t.amount,
+//                 t.coins,
+//                 t.game,
+//                 t.created_at,
+//                 t.paid_at,
+//                 wr.upi_id
+//              FROM transactions t
+//              LEFT JOIN withdrawal_requests wr 
+//                 ON wr.transaction_id = t.id
+//              WHERE t.user_id = ?
+//              ORDER BY t.created_at DESC`,
+//                 [id]
+//             );
+
+//             // ── 2. Calculate total coins ─────────────────────────────
+//             const [balanceRow] = await pool.execute(
+//                 `SELECT 
+//                 COALESCE(
+//                     SUM(
+//                         CASE 
+//                             WHEN type IN ('profit', 'topup') THEN coins
+//                             WHEN type IN ('loss', 'withdrawal') THEN -coins
+//                             ELSE 0
+//                         END
+//                     ), 0
+//                 ) AS totalCoins
+//              FROM transactions
+//              WHERE user_id = ? AND status = 'success'`,
+//                 [id]
+//             );
+
+//             const totalCoins = balanceRow[0].totalCoins;
+
+//             // ── 3. Format transactions ─────────────────────────────
+//             const formatted = rows.map(tx => {
+//                 return {
+//                     id: tx.id,
+//                     type: tx.type,
+//                     status: tx.status,
+
+//                     amount: tx.amount || 0,
+//                     coins: tx.coins,
+//                     game: tx.game || null,
+
+//                     // ✅ NEW FIELD
+//                     upiId: tx.type === "withdrawal" ? tx.upi_id : null,
+
+//                     title:
+//                         tx.type === "topup" ? "Topup" :
+//                             tx.type === "withdrawal" ? "Withdrawal" :
+//                                 tx.type === "profit" ? "Game Win" :
+//                                     tx.type === "loss" ? "Game Loss" :
+//                                         "Transaction",
+
+//                     description:
+//                         tx.type === "topup"
+//                             ? `Added ₹${tx.amount} → ${tx.coins} coins`
+//                             : tx.type === "withdrawal"
+//                                 ? `Withdraw ${tx.coins} coins (UPI: ${tx.upi_id || "N/A"})`
+//                                 : tx.type === "profit"
+//                                     ? `Won ${tx.coins} coins in ${tx.game}`
+//                                     : tx.type === "loss"
+//                                         ? `Lost ${tx.coins} coins in ${tx.game}`
+//                                         : "",
+
+//                     createdAt: tx.created_at,
+//                     paidAt: tx.paid_at
+//                 };
+//             });
+
+//             // ── 4. Final response ─────────────────────────────
+//             return res.status(200).json({
+//                 success: true,
+//                 totalCoins,
+//                 count: formatted.length,
+//                 transactions: formatted
+//             });
+
+//         } catch (error) {
+//             console.error(error);
+//             return res.status(500).json({
+//                 message: "Server error",
+//                 success: false
+//             });
+//         }
+//     },
+
+//     deleteWithdrawal: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+//             const { txId } = req.params;
+
+//             // check transaction
+//             const [rows] = await pool.execute(
+//                 `SELECT * FROM transactions 
+//              WHERE id = ? AND user_id = ? AND type='withdrawal'`,
+//                 [txId, id]
+//             );
+
+//             if (!rows.length) {
+//                 return res.status(404).json({ success: false, message: "Transaction not found" });
+//             }
+
+//             const tx = rows[0];
+
+//             // ❌ Only pending allowed
+//             if (tx.status !== "pending") {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "Cannot delete after approval"
+//                 });
+//             }
+
+//             // delete from both tables
+//             await pool.execute(`DELETE FROM withdrawal_requests WHERE transaction_id=?`, [txId]);
+//             await pool.execute(`DELETE FROM transactions WHERE id=?`, [txId]);
+
+//             return res.json({
+//                 success: true,
+//                 message: "Withdrawal deleted successfully"
+//             });
+
+//         } catch (err) {
+//             console.error(err);
+//             res.status(500).json({ success: false, message: "Server error" });
+//         }
+//     },
+
+//     // updateWithdrawal: async (req, res) => {
+//     //     try {
+//     //         const { id } = req.user;
+//     //         const { txId } = req.params;
+//     //         const { coins, upiId } = req.body;
+
+//     //         // ── Validation ─────────────────────────────
+//     //         if (!coins || coins <= 0) {
+//     //             return res.status(400).json({
+//     //                 success: false,
+//     //                 message: "Invalid withdrawal amount"
+//     //             });
+//     //         }
+
+//     //         if (!upiId || upiId.trim() === "") {
+//     //             return res.status(400).json({
+//     //                 success: false,
+//     //                 message: "UPI ID is required"
+//     //             });
+//     //         }
+
+//     //         // ── Get existing transaction ───────────────
+//     //         const [rows] = await pool.execute(
+//     //             `SELECT * FROM transactions 
+//     //          WHERE id=? AND user_id=? AND type='withdrawal'`,
+//     //             [txId, id]
+//     //         );
+
+//     //         if (!rows.length) {
+//     //             return res.status(404).json({
+//     //                 success: false,
+//     //                 message: "Not found"
+//     //             });
+//     //         }
+
+//     //         const tx = rows[0];
+
+//     //         // ❌ Only pending can be edited
+//     //         if (tx.status !== "pending") {
+//     //             return res.status(400).json({
+//     //                 success: false,
+//     //                 message: "Cannot edit after approval"
+//     //             });
+//     //         }
+
+//     //         // ── Get wallet balance (excluding pending withdrawals) ──
+//     //         const [balanceRows] = await pool.execute(
+//     //             `SELECT 
+//     //             COALESCE(
+//     //                 SUM(
+//     //                     CASE 
+//     //                         WHEN type IN ('profit', 'topup') THEN coins
+//     //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
+//     //                         ELSE 0
+//     //                     END
+//     //                 ), 0
+//     //             ) AS totalCoins
+//     //          FROM transactions
+//     //          WHERE user_id = ? AND status = 'success'`,
+//     //             [id]
+//     //         );
+
+//     //         const totalCoins = balanceRows[0].totalCoins;
+
+//     //         // ── Add back old withdrawal amount (since it's pending) ──
+//     //         const availableBalance = totalCoins;
+
+//     //         // ✅ Check balance
+//     //         if (coins > availableBalance) {
+//     //             return res.status(400).json({
+//     //                 success: false,
+//     //                 message: "Insufficient balance"
+//     //             });
+//     //         }
+
+//     //         // ── Update transaction ─────────────────────
+//     //         await pool.execute(
+//     //             `UPDATE transactions SET coins=? WHERE id=?`,
+//     //             [Math.floor(coins), txId]
+//     //         );
+
+//     //         // ── Update withdrawal request ──────────────
+//     //         await pool.execute(
+//     //             `UPDATE withdrawal_requests 
+//     //          SET amount=?, upi_id=? 
+//     //          WHERE transaction_id=?`,
+//     //             [Math.floor(coins), upiId, txId]
+//     //         );
+
+//     //         return res.json({
+//     //             success: true,
+//     //             message: "Withdrawal updated"
+//     //         });
+
+//     //     } catch (err) {
+//     //         console.error(err);
+//     //         res.status(500).json({
+//     //             success: false,
+//     //             message: "Server error"
+//     //         });
+//     //     }
+//     // }
+
+//     updateWithdrawal: async (req, res) => {
+//         try {
+//             const { id } = req.user;
+//             const { txId } = req.params;
+//             const { coins, upiId } = req.body;
+
+//             // ── Validation ─────────────────────────────
+//             if (!coins || coins < 100) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "Minimum withdrawal is 100 coins"
+//                 });
+//             }
+
+//             if (!upiId || upiId.trim() === "") {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "UPI ID is required"
+//                 });
+//             }
+
+//             // ── Get existing transaction ───────────────
+//             const [rows] = await pool.execute(
+//                 `SELECT * FROM transactions 
+//              WHERE id=? AND user_id=? AND type='withdrawal'`,
+//                 [txId, id]
+//             );
+
+//             if (!rows.length) {
+//                 return res.status(404).json({
+//                     success: false,
+//                     message: "Not found"
+//                 });
+//             }
+
+//             const tx = rows[0];
+
+//             if (tx.status !== "pending") {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "Cannot edit after approval"
+//                 });
+//             }
+
+//             // ── Wallet balance ─────────────────────────
+//             const [balanceRows] = await pool.execute(
+//                 `SELECT 
+//                 COALESCE(
+//                     SUM(
+//                         CASE 
+//                             WHEN type IN ('profit', 'topup') THEN coins
+//                             WHEN type IN ('loss', 'withdrawal') THEN -coins
+//                             ELSE 0
+//                         END
+//                     ), 0
+//                 ) AS totalCoins
+//              FROM transactions
+//              WHERE user_id = ? AND status = 'success'`,
+//                 [id]
+//             );
+
+//             const totalCoins = balanceRows[0].totalCoins;
+
+//             if (coins > totalCoins) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "Insufficient balance"
+//                 });
+//             }
+
+//             // ── 🔥 24 HOUR LIMIT CHECK (EXCLUDE OLD TX) ──
+//             const [limitRows] = await pool.execute(
+//                 `SELECT COALESCE(SUM(coins),0) as totalWithdraw
+//              FROM transactions
+//              WHERE user_id = ?
+//              AND type = 'withdrawal'
+//              AND created_at >= NOW() - INTERVAL 24 HOUR
+//              AND status IN ('pending','success','submitted')
+//              AND id != ?`,
+//                 [id, txId]
+//             );
+
+//             const last24HourWithdraw = limitRows[0].totalWithdraw;
+
+//             if (last24HourWithdraw + coins > 5000) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
+//                 });
+//             }
+
+//             // ── Update transaction ─────────────────────
+//             await pool.execute(
+//                 `UPDATE transactions SET coins=? WHERE id=?`,
+//                 [Math.floor(coins), txId]
+//             );
+
+//             await pool.execute(
+//                 `UPDATE withdrawal_requests 
+//              SET amount=?, upi_id=? 
+//              WHERE transaction_id=?`,
+//                 [Math.floor(coins), upiId, txId]
+//             );
+
+//             return res.json({
+//                 success: true,
+//                 message: "Withdrawal updated"
+//             });
+
+//         } catch (err) {
+//             console.error(err);
+//             res.status(500).json({
+//                 success: false,
+//                 message: "Server error"
+//             });
+//         }
+//     },
+
+// };
+
+
+
+
+
+
 import pool from "../config/db.js";
 import { v4 as uuidv4 } from "uuid";
 
 export const transactionController = {
 
-    // ── GET total coins (profit/topup ADD, loss/withdrawal MINUS) ──────────────
+    // ── GET total coins + bonus breakdown ──────────────────────────
     getTransaction: async (req, res) => {
         try {
             const { id } = req.user;
@@ -17,25 +674,25 @@ export const transactionController = {
                 });
             }
 
-            const [rows] = await pool.execute(
-                `SELECT 
-                    COALESCE(
-                        SUM(
-                            CASE 
-                                WHEN type IN ('profit', 'topup') THEN coins
-                                WHEN type IN ('loss', 'withdrawal') THEN -coins
-                                ELSE 0
-                            END
-                        ), 0
-                    ) AS totalCoins
-                 FROM transactions
-                 WHERE user_id = ? AND status = 'success'`,
+            // Fetch both balances from users table
+            const [userRows] = await pool.execute(
+                `SELECT bonus_balance, real_balance FROM users WHERE id = ?`,
                 [id]
             );
 
+            if (userRows.length === 0) {
+                return res.status(404).json({ message: "User not found", success: false });
+            }
+
+            const bonusCoins = userRows[0].bonus_balance || 0;
+            const realCoins = userRows[0].real_balance || 0;
+            const totalCoins = bonusCoins + realCoins;
+
             return res.status(200).json({
                 success: true,
-                totalCoins: rows[0].totalCoins
+                totalCoins,
+                bonusCoins,
+                realCoins
             });
 
         } catch (error) {
@@ -44,13 +701,13 @@ export const transactionController = {
         }
     },
 
-    // ── SAVE game result (profit or loss) ──────────────────────────────────────
+    // ── SAVE game result (profit or loss) with bonus-first deduction ──
     saveGameResult: async (req, res) => {
+        const connection = await pool.getConnection();
         try {
             const { id } = req.user;
-            const { coins, type, game } = req.body;
+            let { coins, type, game } = req.body;
 
-            // Validation
             if (!id) {
                 return res.status(401).json({ message: "User must be logged in", success: false });
             }
@@ -63,211 +720,177 @@ export const transactionController = {
                 return res.status(400).json({ message: "Invalid transaction type", success: false });
             }
 
-            const txId = uuidv4();
-
-
-            if (["profit", "loss"].includes(type) && !game?.length) {
-                return res.status(401).json({
-                    message: "Game Name is Required",
-                    success: false
-                })
+            if (!game?.length) {
+                return res.status(400).json({ message: "Game name is required", success: false });
             }
 
-            await pool.execute(
-                `INSERT INTO transactions (id, user_id, coins, status, type, created_at,game)
-                 VALUES (?, ?, ?, 'success', ?, NOW(),?)`,
-                [txId, id, Math.floor(coins), type, game]
+            coins = Math.floor(coins);
+
+            await connection.beginTransaction();
+
+            // Get current balances
+            const [userRows] = await connection.execute(
+                `SELECT bonus_balance, real_balance FROM users WHERE id = ? FOR UPDATE`,
+                [id]
             );
+            let { bonus_balance, real_balance } = userRows[0];
+
+            if (type === "profit") {
+                // Profit goes to real balance
+                real_balance += coins;
+
+                // Insert transaction
+                const txId = uuidv4();
+                await connection.execute(
+                    `INSERT INTO transactions (id, user_id, coins, status, type, game, is_bonus, created_at)
+                     VALUES (?, ?, ?, 'success', ?, ?, 0, NOW())`,
+                    [txId, id, coins, type, game]
+                );
+
+                // Update user real_balance
+                await connection.execute(
+                    `UPDATE users SET real_balance = ? WHERE id = ?`,
+                    [real_balance, id]
+                );
+
+            } else { // type === "loss"
+                let remainingLoss = coins;
+                let lossFromBonus = 0;
+                let lossFromReal = 0;
+
+                // First deduct from bonus
+                if (bonus_balance > 0) {
+                    lossFromBonus = Math.min(bonus_balance, remainingLoss);
+                    bonus_balance -= lossFromBonus;
+                    remainingLoss -= lossFromBonus;
+                }
+
+                // Then from real
+                if (remainingLoss > 0) {
+                    lossFromReal = remainingLoss;
+                    real_balance -= lossFromReal;
+                    remainingLoss = 0;
+                }
+
+                // Insert loss transaction(s)
+                const baseTxId = uuidv4();
+
+                if (lossFromBonus > 0) {
+                    await connection.execute(
+                        `INSERT INTO transactions (id, user_id, coins, status, type, game, is_bonus, created_at)
+                         VALUES (?, ?, ?, 'success', ?, ?, 1, NOW())`,
+                        [baseTxId + "_bonus", id, lossFromBonus, "loss", game]
+                    );
+                }
+
+                if (lossFromReal > 0) {
+                    await connection.execute(
+                        `INSERT INTO transactions (id, user_id, coins, status, type, game, is_bonus, created_at)
+                         VALUES (?, ?, ?, 'success', ?, ?, 0, NOW())`,
+                        [baseTxId + "_real", id, lossFromReal, "loss", game]
+                    );
+                }
+
+                // Update user balances
+                await connection.execute(
+                    `UPDATE users SET bonus_balance = ?, real_balance = ? WHERE id = ?`,
+                    [bonus_balance, real_balance, id]
+                );
+            }
+
+            await connection.commit();
+            connection.release();
 
             return res.status(200).json({
                 success: true,
                 message: type === "profit" ? "Winnings saved!" : "Loss recorded",
-                transactionId: txId
             });
 
         } catch (error) {
+            await connection.rollback();
+            connection.release();
             console.error(error);
             return res.status(500).json({ message: "Server error", success: false });
         }
     },
 
-    // withdraw: async (req, res) => {
-    //     try {
-    //         const { id } = req.user;
-    //         const { coins, upiId } = req.body;
-
-    //         // ── Validation ─────────────────────────────
-    //         if (!id) {
-    //             return res.status(401).json({
-    //                 message: "User must be logged in",
-    //                 success: false
-    //             });
-    //         }
-
-    //         if (!coins || coins <= 0) {
-    //             return res.status(400).json({
-    //                 message: "Invalid withdrawal amount",
-    //                 success: false
-    //             });
-    //         }
-
-    //         if (!upiId || upiId.trim() === "") {
-    //             return res.status(400).json({
-    //                 message: "UPI ID is required",
-    //                 success: false
-    //             });
-    //         }
-
-    //         // ── Get current balance ────────────────────
-    //         const [rows] = await pool.execute(
-    //             `SELECT 
-    //             COALESCE(
-    //                 SUM(
-    //                     CASE 
-    //                         WHEN type IN ('profit', 'topup') THEN coins
-    //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
-    //                         ELSE 0
-    //                     END
-    //                 ), 0
-    //             ) AS totalCoins
-    //          FROM transactions
-    //          WHERE user_id = ? AND status = 'success'`,
-    //             [id]
-    //         );
-
-    //         const totalCoins = rows[0].totalCoins;
-
-    //         // ── Check balance ──────────────────────────
-    //         if (coins > totalCoins) {
-    //             return res.status(400).json({
-    //                 message: "Insufficient balance",
-    //                 success: false
-    //             });
-    //         }
-
-    //         // ── Create transaction ─────────────────────
-    //         const txId = uuidv4();
-
-    //         await pool.execute(
-    //             `INSERT INTO transactions 
-    //             (id, user_id, coins, status, type, created_at) 
-    //          VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
-    //             [txId, id, Math.floor(coins)]
-    //         );
-
-    //         // ── Insert UPI request into new table ──────
-    //         await pool.execute(
-    //             `INSERT INTO withdrawal_requests
-    //             (user_id, transaction_id, amount, upi_id)
-    //          VALUES (?, ?, ?, ?)`,
-    //             [id, txId, Math.floor(coins), upiId]
-    //         );
-
-    //         return res.status(200).json({
-    //             success: true,
-    //             message: "Withdrawal request submitted",
-    //             transactionId: txId
-    //         });
-
-    //     } catch (error) {
-    //         console.error(error);
-    //         return res.status(500).json({
-    //             message: "Server error",
-    //             success: false
-    //         });
-    //     }
-    // },
-
-
+    // ── WITHDRAWAL (only from real_balance) ─────────────────────────
     withdraw: async (req, res) => {
+        const connection = await pool.getConnection();
         try {
             const { id } = req.user;
             const { coins, upiId } = req.body;
 
-            // ── Validation ─────────────────────────────
             if (!id) {
-                return res.status(401).json({
-                    message: "User must be logged in",
-                    success: false
-                });
+                return res.status(401).json({ message: "User must be logged in", success: false });
             }
 
             if (!coins || coins < 100) {
-                return res.status(400).json({
-                    message: "Minimum withdrawal is 100 coins",
-                    success: false
-                });
+                return res.status(400).json({ message: "Minimum withdrawal is 100 coins", success: false });
             }
 
             if (!upiId || upiId.trim() === "") {
-                return res.status(400).json({
-                    message: "UPI ID is required",
-                    success: false
-                });
+                return res.status(400).json({ message: "UPI ID is required", success: false });
             }
 
-            // ── Get wallet balance ────────────────────
-            const [rows] = await pool.execute(
-                `SELECT 
-                COALESCE(
-                    SUM(
-                        CASE 
-                            WHEN type IN ('profit', 'topup') THEN coins
-                            WHEN type IN ('loss', 'withdrawal') THEN -coins
-                            ELSE 0
-                        END
-                    ), 0
-                ) AS totalCoins
-             FROM transactions
-             WHERE user_id = ? AND status = 'success'`,
+            await connection.beginTransaction();
+
+            // Get real_balance only (bonus cannot be withdrawn)
+            const [userRows] = await connection.execute(
+                `SELECT real_balance FROM users WHERE id = ? FOR UPDATE`,
                 [id]
             );
+            const real_balance = userRows[0].real_balance;
 
-            const totalCoins = rows[0].totalCoins;
-
-            if (coins > totalCoins) {
-                return res.status(400).json({
-                    message: "Insufficient balance",
-                    success: false
-                });
+            if (coins > real_balance) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ message: "Insufficient real balance (bonus coins cannot be withdrawn)", success: false });
             }
 
-            // ── 🔥 24 HOUR LIMIT CHECK ─────────────────
-            const [limitRows] = await pool.execute(
+            // 24h withdrawal limit check (only real withdrawals count)
+            const [limitRows] = await connection.execute(
                 `SELECT COALESCE(SUM(coins),0) as totalWithdraw
-             FROM transactions
-             WHERE user_id = ?
-             AND type = 'withdrawal'
-             AND created_at >= NOW() - INTERVAL 24 HOUR
-             AND status IN ('pending','success','submitted')`,
+                 FROM transactions
+                 WHERE user_id = ?
+                 AND type = 'withdrawal'
+                 AND created_at >= NOW() - INTERVAL 24 HOUR
+                 AND status IN ('pending','success','submitted')`,
                 [id]
             );
-
             const last24HourWithdraw = limitRows[0].totalWithdraw;
-
             if (last24HourWithdraw + coins > 5000) {
+                await connection.rollback();
+                connection.release();
                 return res.status(400).json({
                     success: false,
                     message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
                 });
             }
 
-            // ── Create transaction ─────────────────────
+            // Deduct from real_balance
+            const newRealBalance = real_balance - coins;
+            await connection.execute(
+                `UPDATE users SET real_balance = ? WHERE id = ?`,
+                [newRealBalance, id]
+            );
+
+            // Create withdrawal transaction
             const txId = uuidv4();
-
-            await pool.execute(
-                `INSERT INTO transactions 
-            (id, user_id, coins, status, type, created_at) 
-            VALUES (?, ?, ?, 'pending', 'withdrawal', NOW())`,
-                [txId, id, Math.floor(coins)]
+            await connection.execute(
+                `INSERT INTO transactions (id, user_id, coins, status, type, is_bonus, created_at)
+                 VALUES (?, ?, ?, 'pending', 'withdrawal', 0, NOW())`,
+                [txId, id, coins]
             );
 
-            await pool.execute(
-                `INSERT INTO withdrawal_requests
-            (user_id, transaction_id, amount, upi_id)
-            VALUES (?, ?, ?, ?)`,
-                [id, txId, Math.floor(coins), upiId]
+            await connection.execute(
+                `INSERT INTO withdrawal_requests (user_id, transaction_id, amount, upi_id)
+                 VALUES (?, ?, ?, ?)`,
+                [id, txId, coins, upiId]
             );
+
+            await connection.commit();
+            connection.release();
 
             return res.status(200).json({
                 success: true,
@@ -276,379 +899,227 @@ export const transactionController = {
             });
 
         } catch (error) {
+            await connection.rollback();
+            connection.release();
             console.error(error);
-            return res.status(500).json({
-                message: "Server error",
-                success: false
-            });
+            return res.status(500).json({ message: "Server error", success: false });
         }
     },
 
+    // ── GET ALL TRANSACTIONS + BALANCE (includes bonus breakdown) ──
     getAllTransactionsWithBalance: async (req, res) => {
         try {
             const { id } = req.user;
 
             if (!id) {
-                return res.status(401).json({
-                    message: "User must be logged in",
-                    success: false
-                });
+                return res.status(401).json({ message: "User must be logged in", success: false });
             }
 
-            // ── 1. Get all transactions + UPI ID ─────────────────────────────
+            // Get user balances
+            const [userRows] = await pool.execute(
+                `SELECT bonus_balance, real_balance FROM users WHERE id = ?`,
+                [id]
+            );
+            const bonusCoins = userRows[0]?.bonus_balance || 0;
+            const realCoins = userRows[0]?.real_balance || 0;
+            const totalCoins = bonusCoins + realCoins;
+
+            // Get all transactions with upi_id
             const [rows] = await pool.execute(
                 `SELECT 
-                t.id,
-                t.type,
-                t.status,
-                t.amount,
-                t.coins,
-                t.game,
-                t.created_at,
-                t.paid_at,
-                wr.upi_id
-             FROM transactions t
-             LEFT JOIN withdrawal_requests wr 
-                ON wr.transaction_id = t.id
-             WHERE t.user_id = ?
-             ORDER BY t.created_at DESC`,
+                    t.id, t.type, t.status, t.amount, t.coins, t.game, 
+                    t.created_at, t.paid_at, t.is_bonus,
+                    wr.upi_id
+                 FROM transactions t
+                 LEFT JOIN withdrawal_requests wr ON wr.transaction_id = t.id
+                 WHERE t.user_id = ?
+                 ORDER BY t.created_at DESC`,
                 [id]
             );
 
-            // ── 2. Calculate total coins ─────────────────────────────
-            const [balanceRow] = await pool.execute(
-                `SELECT 
-                COALESCE(
-                    SUM(
-                        CASE 
-                            WHEN type IN ('profit', 'topup') THEN coins
-                            WHEN type IN ('loss', 'withdrawal') THEN -coins
-                            ELSE 0
-                        END
-                    ), 0
-                ) AS totalCoins
-             FROM transactions
-             WHERE user_id = ? AND status = 'success'`,
-                [id]
-            );
+            const formatted = rows.map(tx => ({
+                id: tx.id,
+                type: tx.type,
+                status: tx.status,
+                amount: tx.amount || 0,
+                coins: tx.coins,
+                game: tx.game || null,
+                isBonus: tx.is_bonus === 1,
+                upiId: tx.type === "withdrawal" ? tx.upi_id : null,
+                title: tx.type === "topup" ? "Topup" :
+                    tx.type === "withdrawal" ? "Withdrawal" :
+                        tx.type === "profit" ? "Game Win" :
+                            tx.type === "loss" ? "Game Loss" :
+                                tx.type === "bonus" ? "Bonus Award" : "Transaction",
+                description: tx.type === "topup" ? `Added ₹${tx.amount} → ${tx.coins} coins` :
+                    tx.type === "withdrawal" ? `Withdraw ${tx.coins} coins (UPI: ${tx.upi_id || "N/A"})` :
+                        tx.type === "profit" ? `Won ${tx.coins} coins in ${tx.game}` :
+                            tx.type === "loss" ? `Lost ${tx.coins} coins in ${tx.game}${tx.is_bonus ? " (from bonus)" : ""}` :
+                                tx.type === "bonus" ? `Bonus +${tx.coins} coins` : "",
+                createdAt: tx.created_at,
+                paidAt: tx.paid_at
+            }));
 
-            const totalCoins = balanceRow[0].totalCoins;
-
-            // ── 3. Format transactions ─────────────────────────────
-            const formatted = rows.map(tx => {
-                return {
-                    id: tx.id,
-                    type: tx.type,
-                    status: tx.status,
-
-                    amount: tx.amount || 0,
-                    coins: tx.coins,
-                    game: tx.game || null,
-
-                    // ✅ NEW FIELD
-                    upiId: tx.type === "withdrawal" ? tx.upi_id : null,
-
-                    title:
-                        tx.type === "topup" ? "Topup" :
-                            tx.type === "withdrawal" ? "Withdrawal" :
-                                tx.type === "profit" ? "Game Win" :
-                                    tx.type === "loss" ? "Game Loss" :
-                                        "Transaction",
-
-                    description:
-                        tx.type === "topup"
-                            ? `Added ₹${tx.amount} → ${tx.coins} coins`
-                            : tx.type === "withdrawal"
-                                ? `Withdraw ${tx.coins} coins (UPI: ${tx.upi_id || "N/A"})`
-                                : tx.type === "profit"
-                                    ? `Won ${tx.coins} coins in ${tx.game}`
-                                    : tx.type === "loss"
-                                        ? `Lost ${tx.coins} coins in ${tx.game}`
-                                        : "",
-
-                    createdAt: tx.created_at,
-                    paidAt: tx.paid_at
-                };
-            });
-
-            // ── 4. Final response ─────────────────────────────
             return res.status(200).json({
                 success: true,
                 totalCoins,
+                bonusCoins,
+                realCoins,
                 count: formatted.length,
                 transactions: formatted
             });
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({
-                message: "Server error",
-                success: false
-            });
+            return res.status(500).json({ message: "Server error", success: false });
         }
     },
 
+    // ── DELETE PENDING WITHDRAWAL ────────────────────────────────
     deleteWithdrawal: async (req, res) => {
+        const connection = await pool.getConnection();
         try {
             const { id } = req.user;
             const { txId } = req.params;
 
-            // check transaction
-            const [rows] = await pool.execute(
-                `SELECT * FROM transactions 
-             WHERE id = ? AND user_id = ? AND type='withdrawal'`,
+            await connection.beginTransaction();
+
+            // Check transaction exists and is pending
+            const [rows] = await connection.execute(
+                `SELECT * FROM transactions WHERE id = ? AND user_id = ? AND type = 'withdrawal' FOR UPDATE`,
                 [txId, id]
             );
 
             if (!rows.length) {
+                await connection.rollback();
+                connection.release();
                 return res.status(404).json({ success: false, message: "Transaction not found" });
             }
 
             const tx = rows[0];
-
-            // ❌ Only pending allowed
             if (tx.status !== "pending") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Cannot delete after approval"
-                });
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ success: false, message: "Cannot delete after approval" });
             }
 
-            // delete from both tables
-            await pool.execute(`DELETE FROM withdrawal_requests WHERE transaction_id=?`, [txId]);
-            await pool.execute(`DELETE FROM transactions WHERE id=?`, [txId]);
+            // Refund coins to real_balance
+            await connection.execute(
+                `UPDATE users SET real_balance = real_balance + ? WHERE id = ?`,
+                [tx.coins, id]
+            );
 
-            return res.json({
-                success: true,
-                message: "Withdrawal deleted successfully"
-            });
+            // Delete records
+            await connection.execute(`DELETE FROM withdrawal_requests WHERE transaction_id = ?`, [txId]);
+            await connection.execute(`DELETE FROM transactions WHERE id = ?`, [txId]);
+
+            await connection.commit();
+            connection.release();
+
+            return res.json({ success: true, message: "Withdrawal deleted successfully" });
 
         } catch (err) {
+            await connection.rollback();
+            connection.release();
             console.error(err);
-            res.status(500).json({ success: false, message: "Server error" });
+            return res.status(500).json({ success: false, message: "Server error" });
         }
     },
 
-    // updateWithdrawal: async (req, res) => {
-    //     try {
-    //         const { id } = req.user;
-    //         const { txId } = req.params;
-    //         const { coins, upiId } = req.body;
-
-    //         // ── Validation ─────────────────────────────
-    //         if (!coins || coins <= 0) {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 message: "Invalid withdrawal amount"
-    //             });
-    //         }
-
-    //         if (!upiId || upiId.trim() === "") {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 message: "UPI ID is required"
-    //             });
-    //         }
-
-    //         // ── Get existing transaction ───────────────
-    //         const [rows] = await pool.execute(
-    //             `SELECT * FROM transactions 
-    //          WHERE id=? AND user_id=? AND type='withdrawal'`,
-    //             [txId, id]
-    //         );
-
-    //         if (!rows.length) {
-    //             return res.status(404).json({
-    //                 success: false,
-    //                 message: "Not found"
-    //             });
-    //         }
-
-    //         const tx = rows[0];
-
-    //         // ❌ Only pending can be edited
-    //         if (tx.status !== "pending") {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 message: "Cannot edit after approval"
-    //             });
-    //         }
-
-    //         // ── Get wallet balance (excluding pending withdrawals) ──
-    //         const [balanceRows] = await pool.execute(
-    //             `SELECT 
-    //             COALESCE(
-    //                 SUM(
-    //                     CASE 
-    //                         WHEN type IN ('profit', 'topup') THEN coins
-    //                         WHEN type IN ('loss', 'withdrawal') THEN -coins
-    //                         ELSE 0
-    //                     END
-    //                 ), 0
-    //             ) AS totalCoins
-    //          FROM transactions
-    //          WHERE user_id = ? AND status = 'success'`,
-    //             [id]
-    //         );
-
-    //         const totalCoins = balanceRows[0].totalCoins;
-
-    //         // ── Add back old withdrawal amount (since it's pending) ──
-    //         const availableBalance = totalCoins;
-
-    //         // ✅ Check balance
-    //         if (coins > availableBalance) {
-    //             return res.status(400).json({
-    //                 success: false,
-    //                 message: "Insufficient balance"
-    //             });
-    //         }
-
-    //         // ── Update transaction ─────────────────────
-    //         await pool.execute(
-    //             `UPDATE transactions SET coins=? WHERE id=?`,
-    //             [Math.floor(coins), txId]
-    //         );
-
-    //         // ── Update withdrawal request ──────────────
-    //         await pool.execute(
-    //             `UPDATE withdrawal_requests 
-    //          SET amount=?, upi_id=? 
-    //          WHERE transaction_id=?`,
-    //             [Math.floor(coins), upiId, txId]
-    //         );
-
-    //         return res.json({
-    //             success: true,
-    //             message: "Withdrawal updated"
-    //         });
-
-    //     } catch (err) {
-    //         console.error(err);
-    //         res.status(500).json({
-    //             success: false,
-    //             message: "Server error"
-    //         });
-    //     }
-    // }
-
+    // ── UPDATE PENDING WITHDRAWAL (only real_balance) ────────────
     updateWithdrawal: async (req, res) => {
+        const connection = await pool.getConnection();
         try {
             const { id } = req.user;
             const { txId } = req.params;
             const { coins, upiId } = req.body;
 
-            // ── Validation ─────────────────────────────
             if (!coins || coins < 100) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Minimum withdrawal is 100 coins"
-                });
+                return res.status(400).json({ success: false, message: "Minimum withdrawal is 100 coins" });
             }
-
             if (!upiId || upiId.trim() === "") {
-                return res.status(400).json({
-                    success: false,
-                    message: "UPI ID is required"
-                });
+                return res.status(400).json({ success: false, message: "UPI ID is required" });
             }
 
-            // ── Get existing transaction ───────────────
-            const [rows] = await pool.execute(
-                `SELECT * FROM transactions 
-             WHERE id=? AND user_id=? AND type='withdrawal'`,
+            await connection.beginTransaction();
+
+            // Get existing transaction
+            const [rows] = await connection.execute(
+                `SELECT * FROM transactions WHERE id = ? AND user_id = ? AND type = 'withdrawal' FOR UPDATE`,
                 [txId, id]
             );
-
             if (!rows.length) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Not found"
-                });
+                await connection.rollback();
+                connection.release();
+                return res.status(404).json({ success: false, message: "Not found" });
+            }
+            const oldTx = rows[0];
+            if (oldTx.status !== "pending") {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ success: false, message: "Cannot edit after approval" });
             }
 
-            const tx = rows[0];
-
-            if (tx.status !== "pending") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Cannot edit after approval"
-                });
-            }
-
-            // ── Wallet balance ─────────────────────────
-            const [balanceRows] = await pool.execute(
-                `SELECT 
-                COALESCE(
-                    SUM(
-                        CASE 
-                            WHEN type IN ('profit', 'topup') THEN coins
-                            WHEN type IN ('loss', 'withdrawal') THEN -coins
-                            ELSE 0
-                        END
-                    ), 0
-                ) AS totalCoins
-             FROM transactions
-             WHERE user_id = ? AND status = 'success'`,
+            // Get current real_balance
+            const [userRows] = await connection.execute(
+                `SELECT real_balance FROM users WHERE id = ? FOR UPDATE`,
                 [id]
             );
+            let real_balance = userRows[0].real_balance;
 
-            const totalCoins = balanceRows[0].totalCoins;
-
-            if (coins > totalCoins) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Insufficient balance"
-                });
+            // Adjust balance: refund old amount, then deduct new amount
+            const newRealBalance = real_balance + oldTx.coins - coins;
+            if (newRealBalance < 0) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ success: false, message: "Insufficient real balance" });
             }
 
-            // ── 🔥 24 HOUR LIMIT CHECK (EXCLUDE OLD TX) ──
-            const [limitRows] = await pool.execute(
+            // 24h limit check (excluding this transaction)
+            const [limitRows] = await connection.execute(
                 `SELECT COALESCE(SUM(coins),0) as totalWithdraw
-             FROM transactions
-             WHERE user_id = ?
-             AND type = 'withdrawal'
-             AND created_at >= NOW() - INTERVAL 24 HOUR
-             AND status IN ('pending','success','submitted')
-             AND id != ?`,
+                 FROM transactions
+                 WHERE user_id = ?
+                 AND type = 'withdrawal'
+                 AND created_at >= NOW() - INTERVAL 24 HOUR
+                 AND status IN ('pending','success','submitted')
+                 AND id != ?`,
                 [id, txId]
             );
-
             const last24HourWithdraw = limitRows[0].totalWithdraw;
-
             if (last24HourWithdraw + coins > 5000) {
+                await connection.rollback();
+                connection.release();
                 return res.status(400).json({
                     success: false,
                     message: `24 hour withdrawal limit exceeded. Remaining: ${5000 - last24HourWithdraw}`
                 });
             }
 
-            // ── Update transaction ─────────────────────
-            await pool.execute(
-                `UPDATE transactions SET coins=? WHERE id=?`,
+            // Update balances and records
+            await connection.execute(
+                `UPDATE users SET real_balance = ? WHERE id = ?`,
+                [newRealBalance, id]
+            );
+            await connection.execute(
+                `UPDATE transactions SET coins = ? WHERE id = ?`,
                 [Math.floor(coins), txId]
             );
-
-            await pool.execute(
-                `UPDATE withdrawal_requests 
-             SET amount=?, upi_id=? 
-             WHERE transaction_id=?`,
+            await connection.execute(
+                `UPDATE withdrawal_requests SET amount = ?, upi_id = ? WHERE transaction_id = ?`,
                 [Math.floor(coins), upiId, txId]
             );
 
-            return res.json({
-                success: true,
-                message: "Withdrawal updated"
-            });
+            await connection.commit();
+            connection.release();
+
+            return res.json({ success: true, message: "Withdrawal updated" });
 
         } catch (err) {
+            await connection.rollback();
+            connection.release();
             console.error(err);
-            res.status(500).json({
-                success: false,
-                message: "Server error"
-            });
+            return res.status(500).json({ success: false, message: "Server error" });
         }
-    },
-
+    }
 };
-
