@@ -172,6 +172,7 @@ export const getTransactionStatus = async (req, res) => {
   res.json(rows[0]);
 };
 
+
 // ──────────────────────────────────────────────────────────
 // 4. Confirm Topup (Called by Telegram bot on ACCEPT)
 //    Adds coins to user's real_balance and marks success
@@ -181,9 +182,13 @@ export const confirmTopup = async (txnId) => {
   try {
     await connection.beginTransaction();
 
-    // Get transaction details with FOR UPDATE
+    // ✅ Allow both 'pending' and 'submitted' status
     const [txnRows] = await connection.execute(
-      `SELECT * FROM transactions WHERE id = ? AND type = 'topup' AND status = 'pending' FOR UPDATE`,
+      `SELECT * FROM transactions 
+       WHERE id = ? 
+       AND type = 'topup' 
+       AND status IN ('pending', 'submitted') 
+       FOR UPDATE`,
       [txnId]
     );
 
@@ -198,13 +203,13 @@ export const confirmTopup = async (txnId) => {
     const userId = txn.user_id;
     const coinsToAdd = txn.coins;
 
-    // ✅ Update user's real_balance (topup goes to real balance, not bonus)
+    // Update user's real_balance
     await connection.execute(
       `UPDATE users SET real_balance = real_balance + ? WHERE id = ?`,
       [coinsToAdd, userId]
     );
 
-    // ✅ Mark transaction as success
+    // Mark transaction as success
     await connection.execute(
       `UPDATE transactions SET status = 'success', paid_at = NOW() WHERE id = ?`,
       [txnId]
@@ -232,8 +237,13 @@ export const rejectTopup = async (txnId, remark = null) => {
   try {
     await connection.beginTransaction();
 
+    // ✅ Allow both 'pending' and 'submitted' status
     const [txnRows] = await connection.execute(
-      `SELECT * FROM transactions WHERE id = ? AND type = 'topup' AND status = 'pending' FOR UPDATE`,
+      `SELECT * FROM transactions 
+       WHERE id = ? 
+       AND type = 'topup' 
+       AND status IN ('pending', 'submitted') 
+       FOR UPDATE`,
       [txnId]
     );
 
