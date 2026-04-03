@@ -235,6 +235,8 @@
 
 
 
+
+
 // ╔══════════════════════════════════════════════════════╗
 // ║  FILE: backend/src/services/telegramBotHandler.js   ║
 // ║  Admin ke Telegram button press handle karna        ║
@@ -284,12 +286,16 @@ async function handleCallbackQuery(cbq) {
   const data = cbq.data || "";
   const adminUserId = String(cbq.from.id);
   const chatId = cbq.message?.chat?.id;
+  const callbackId = cbq.id;
 
   console.log(`🔘 Callback: "${data}" from admin ${adminUserId}`);
 
+  // ✅ CRITICAL FIX: Answer callback IMMEDIATELY to avoid timeout
+  await answerCallback(callbackId, "⏳ Processing...", false);
+
   const firstColon = data.indexOf(":");
   if (firstColon === -1) {
-    await answerCallback(cbq.id, "⚠️ Invalid data");
+    await sendMsg(chatId, "⚠️ Invalid callback data");
     return;
   }
 
@@ -297,14 +303,14 @@ async function handleCallbackQuery(cbq) {
   const txnId = data.slice(firstColon + 1);
 
   if (!txnId) {
-    await answerCallback(cbq.id, "⚠️ TxnId missing");
+    await sendMsg(chatId, "⚠️ TxnId missing");
     return;
   }
 
   // Fetch transaction from DB
   const [rows] = await pool.query("SELECT * FROM transactions WHERE id=?", [txnId]);
   if (!rows.length) {
-    await answerCallback(cbq.id, "❌ Transaction not found in DB!");
+    await sendMsg(chatId, "❌ Transaction not found in DB!");
     return;
   }
 
@@ -316,7 +322,7 @@ async function handleCallbackQuery(cbq) {
     const result = await confirmTopup(txnId);
 
     if (!result.success) {
-      await answerCallback(cbq.id, "❌ Failed to accept: " + result.message);
+      await sendMsg(chatId, "❌ Failed to accept: " + result.message);
       return;
     }
 
@@ -331,7 +337,6 @@ async function handleCallbackQuery(cbq) {
       action: "accept",
     });
 
-    await answerCallback(cbq.id, "✅ Payment ACCEPTED! Coins added to real balance.");
     console.log(`✅ TxnId=${txnId} ACCEPTED — ${result.coinsAdded} coins added to real_balance`);
     return;
   }
@@ -349,12 +354,11 @@ async function handleCallbackQuery(cbq) {
       `(Ya sirf <code>skip</code> likho bina reason ke.)`
     );
 
-    await answerCallback(cbq.id, "✏️ Reason type karo chat mein...");
     console.log(`⏳ TxnId=${txnId} — waiting for reject remark`);
     return;
   }
 
-  await answerCallback(cbq.id, "⚠️ Unknown action: " + action);
+  await sendMsg(chatId, "⚠️ Unknown action: " + action);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -409,7 +413,7 @@ async function handleMessage(msg) {
 // ──────────────────────────────────────────────────────────────
 //  HELPERS
 // ──────────────────────────────────────────────────────────────
-async function answerCallback(callbackQueryId, text) {
+async function answerCallback(callbackQueryId, text, showAlert = false) {
   try {
     const res = await fetch(`${BASE}/answerCallbackQuery`, {
       method: "POST",
@@ -417,7 +421,7 @@ async function answerCallback(callbackQueryId, text) {
       body: JSON.stringify({
         callback_query_id: callbackQueryId,
         text,
-        show_alert: true,
+        show_alert: showAlert,
       }),
     });
     const data = await res.json();
