@@ -149,12 +149,116 @@ export const authController = {
 
 
     // Updated register method
+    // register: async (req, res) => {
+    //     const connection = await pool.getConnection();
+    //     try {
+    //         const { username, phone, password, reffer_id } = req.body; // reffer_id = referrer's playing_id
+
+    //         // validation
+    //         if (!username || !phone || !password) {
+    //             return res.status(400).json({ message: "All fields required", success: false });
+    //         }
+    //         if (password.length < 8) {
+    //             return res.status(400).json({ message: "Password must be at least 8 characters", success: false });
+    //         }
+
+    //         // Check existing user
+    //         const [existing] = await connection.execute(
+    //             `SELECT * FROM users WHERE Username = ? OR Phone = ?`,
+    //             [username, phone]
+    //         );
+    //         if (existing.length > 0) {
+    //             const user = existing[0];
+    //             if (user.Username === username) return res.status(400).json({ message: "Username already exists", success: false });
+    //             if (user.Phone === phone) return res.status(400).json({ message: "Phone number already registered", success: false });
+    //         }
+
+    //         // Validate referrer if provided
+    //         let referrerId = null;
+    //         if (reffer_id) {
+    //             const [refRows] = await connection.execute(
+    //                 `SELECT id FROM users WHERE playing_id = ?`,
+    //                 [reffer_id]
+    //             );
+    //             if (refRows.length === 0) {
+    //                 return res.status(400).json({ message: "Invalid referrer ID", success: false });
+    //             }
+    //             referrerId = refRows[0].id;
+    //             // Prevent self referral
+    //             // (we don't know new user id yet, but we can check later; we'll add a check after insert)
+    //         }
+
+    //         // Generate new playing_id
+    //         const [lastUser] = await connection.execute(`SELECT playing_id FROM users ORDER BY id DESC LIMIT 1`);
+    //         let newPlayingId;
+    //         if (lastUser.length === 0 || !lastUser[0].playing_id) {
+    //             newPlayingId = "abc1000001";
+    //         } else {
+    //             const num = parseInt(lastUser[0].playing_id.replace("abc", ""));
+    //             newPlayingId = "abc" + (num + 1);
+    //         }
+
+    //         const hashedPassword = await bcrypt.hash(password, 10);
+
+    //         await connection.beginTransaction();
+
+    //         // Insert new user
+    //         const [result] = await connection.execute(
+    //             `INSERT INTO users (Username, Phone, Password, playing_id, userReffer_id, bonus_balance, real_balance)
+    //          VALUES (?, ?, ?, ?, ?, 0, 0)`,
+    //             [username, phone, hashedPassword, newPlayingId, reffer_id || null]
+    //         );
+    //         const newUserId = result.insertId;
+
+    //         // Prevent self referral (if referrer_id equals new user id)
+    //         if (referrerId === newUserId) {
+    //             await connection.rollback();
+    //             connection.release();
+    //             return res.status(400).json({ message: "Cannot refer yourself", success: false });
+    //         }
+
+    //         // Award 100 bonus to new user
+    //         const bonusTxId = uuidv4();
+    //         await connection.execute(
+    //             `INSERT INTO transactions (id, user_id, coins, status, type, is_bonus, admin_remark, created_at)
+    //          VALUES (?, ?, 100, 'success', 'bonus', 1, 'signup_bonus', NOW())`,
+    //             [bonusTxId, newUserId]
+    //         );
+    //         await connection.execute(
+    //             `UPDATE users SET bonus_balance = bonus_balance + 100 WHERE id = ?`,
+    //             [newUserId]
+    //         );
+
+    //         // Award milestone bonus to referrer (if any)
+    //         if (referrerId) {
+    //             await awardReferralBonus(referrerId, connection);
+    //         }
+
+    //         await connection.commit();
+    //         connection.release();
+
+    //         return res.status(201).json({
+    //             message: "User registered successfully",
+    //             playing_id: newPlayingId,
+    //             bonusAwarded: 100,
+    //             success: true
+    //         });
+
+    //     } catch (error) {
+    //         await connection.rollback();
+    //         connection.release();
+    //         console.error(error);
+    //         return res.status(500).json({ message: error.message, success: false });
+    //     }
+    // },
+
+
     register: async (req, res) => {
         const connection = await pool.getConnection();
         try {
-            const { username, phone, password, reffer_id } = req.body; // reffer_id = referrer's playing_id
+            const { username, phone, password, reffer_id } = req.body;
 
-            // validation
+            // Validation
             if (!username || !phone || !password) {
                 return res.status(400).json({ message: "All fields required", success: false });
             }
@@ -169,12 +273,17 @@ export const authController = {
             );
             if (existing.length > 0) {
                 const user = existing[0];
-                if (user.Username === username) return res.status(400).json({ message: "Username already exists", success: false });
-                if (user.Phone === phone) return res.status(400).json({ message: "Phone number already registered", success: false });
+                if (user.Username === username) {
+                    return res.status(400).json({ message: "Username already exists", success: false });
+                }
+                if (user.Phone === phone) {
+                    return res.status(400).json({ message: "Phone number already registered", success: false });
+                }
             }
 
             // Validate referrer if provided
             let referrerId = null;
+            let isValidReferral = false;
             if (reffer_id) {
                 const [refRows] = await connection.execute(
                     `SELECT id FROM users WHERE playing_id = ?`,
@@ -184,18 +293,17 @@ export const authController = {
                     return res.status(400).json({ message: "Invalid referrer ID", success: false });
                 }
                 referrerId = refRows[0].id;
-                // Prevent self referral
-                // (we don't know new user id yet, but we can check later; we'll add a check after insert)
+                isValidReferral = true;
             }
 
             // Generate new playing_id
             const [lastUser] = await connection.execute(`SELECT playing_id FROM users ORDER BY id DESC LIMIT 1`);
             let newPlayingId;
             if (lastUser.length === 0 || !lastUser[0].playing_id) {
-                newPlayingId = "abc1000001";
+                newPlayingId = "4x1000001";
             } else {
-                const num = parseInt(lastUser[0].playing_id.replace("abc", ""));
-                newPlayingId = "abc" + (num + 1);
+                const num = parseInt(lastUser[0].playing_id.replace("4x", ""));
+                newPlayingId = "4x" + (num + 1);
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -217,17 +325,22 @@ export const authController = {
                 return res.status(400).json({ message: "Cannot refer yourself", success: false });
             }
 
-            // Award 100 bonus to new user
-            const bonusTxId = uuidv4();
-            await connection.execute(
-                `INSERT INTO transactions (id, user_id, coins, status, type, is_bonus, admin_remark, created_at)
-             VALUES (?, ?, 100, 'success', 'bonus', 1, 'signup_bonus', NOW())`,
-                [bonusTxId, newUserId]
-            );
-            await connection.execute(
-                `UPDATE users SET bonus_balance = bonus_balance + 100 WHERE id = ?`,
-                [newUserId]
-            );
+            let bonusAwarded = 0;
+
+            // ✅ Award 100 bonus to new user ONLY if valid referral was used
+            if (isValidReferral) {
+                const bonusTxId = uuidv4();
+                await connection.execute(
+                    `INSERT INTO transactions (id, user_id, coins, status, type, is_bonus, admin_remark, created_at)
+                 VALUES (?, ?, 100, 'success', 'bonus', 1, 'signup_bonus', NOW())`,
+                    [bonusTxId, newUserId]
+                );
+                await connection.execute(
+                    `UPDATE users SET bonus_balance = bonus_balance + 100 WHERE id = ?`,
+                    [newUserId]
+                );
+                bonusAwarded = 100;
+            }
 
             // Award milestone bonus to referrer (if any)
             if (referrerId) {
@@ -240,7 +353,7 @@ export const authController = {
             return res.status(201).json({
                 message: "User registered successfully",
                 playing_id: newPlayingId,
-                bonusAwarded: 100,
+                bonusAwarded: bonusAwarded,
                 success: true
             });
 
