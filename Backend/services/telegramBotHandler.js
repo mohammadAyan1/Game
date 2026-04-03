@@ -443,6 +443,9 @@ async function sendMsg(chatId, text) {
       }),
     });
     const data = await res.json();
+
+    console.log("sky info group");
+
     if (!data.ok) console.error("⚠️ sendMsg error:", JSON.stringify(data));
   } catch (err) {
     console.error("❌ sendMsg error:", err.message);
